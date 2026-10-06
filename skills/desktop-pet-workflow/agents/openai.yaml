@@ -1,4 +1,4 @@
 interface:
-  display_name: "桌宠制作与修复"
-  short_description: "制作和修复桌宠动画，保存参考、提示词、高清原稿与便携成品"
-  default_prompt: "请使用 $desktop-pet-workflow 处理这次桌宠制作、修复或作品资料整理。"
+  display_name: "桌宠制作与交付"
+  short_description: "制作与修复桌宠，设计宠物展示网站，用 Git 保存素材、源码和版本成品"
+  default_prompt: "请使用 $desktop-pet-workflow 完成本次桌宠或宠物展示网站任务，用 Git 保存创作资料、高清素材、成品和网站源码。"

@@ -1,4 +1,0 @@
-interface:
-  display_name: "静态网站源码与交付"
-  short_description: "保存展示网站完整源码、素材和下载资源，支持独立维护与发布"
-  default_prompt: "请使用 $static-site-delivery 整理这个展示网站的完整源码、素材和下载资源。"

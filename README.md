@@ -1,55 +1,50 @@
 # My Skills
 
-个人可复用的 Codex 技能。这里保存通用方法与小型核验工具，具体作品、图片和角色设定保存在各自作品仓库。两个技能均支持自动识别，也可显式调用。
+把桌宠制作、动作返工、作品保存与宠物展示网站的经验，整理成换一台电脑也能继续使用的 Codex 技能。
 
-| 技能 | 用途 |
+当前版本：**v1.3.0**。使用 `$desktop-pet-workflow` 调用，也可由 Codex 根据桌宠或宠物网站任务自动识别。
+
+## 桌宠制作与交付
+
+一个技能覆盖桌宠及其展示网站，按任务读取需要的经验。
+
+| 要做什么 | 技能中保留的经验 |
 | --- | --- |
-| [desktop-pet-workflow](skills/desktop-pet-workflow/SKILL.md) | 桌宠制作、局部修复、作品资料整理与便携交付 |
-| [static-site-delivery](skills/static-site-delivery/SKILL.md) | 展示网站完整源码、素材、下载资源与独立发布 |
+| 设计与制作桌宠 | 角色参考分工、动作分镜、实际提示词、高清原稿、构图与注视方向。 |
+| 修复已有动作 | 躯干对齐、比例与配色、道具稳定、循环接缝、最终图集与真实播放。 |
+| 保存和发布作品 | 从制作开始使用 Git，组织来源、参考、素材和解包成品；独立版本提交、标签、逐动作预览与 Release。 |
+| 制作宠物展示网站 | 角色介绍、动作剧场、下载与安装；高清动画、透明边缘、独立交互状态、窄屏与深浅色。 |
 
-## 换电脑安装
+[阅读技能正文](skills/desktop-pet-workflow/SKILL.md)。正文说明主流程，`references/` 保存按需阅读的经验，`agents/openai.yaml` 提供显示名称和调用示例；无需安装本仓库的运行依赖。
 
-这是私有仓库。先在新环境登录有访问权限的 GitHub 账号，并配置 Git 使用该身份；不要把令牌写入仓库或聊天。
+通用网站技能已合并：宠物网站的设计和注意事项现在属于这个技能，宠物与网站的文件和更新仍相对独立。
 
-```sh
-gh auth login --hostname github.com
-gh auth setup-git --hostname github.com
-```
+## 换电脑使用
 
-在 Codex 中使用内置 `$skill-installer`，发送：
-
-```text
-请从 MIBXR/my-skills 的 v1.2.0 标签安装
-skills/desktop-pet-workflow 和 skills/static-site-delivery。
-这是私有仓库，请使用当前已授权的 GitHub 身份。
-```
-
-也可调用当前安装版本的官方 `install-skill-from-github.py`，传入：
+这是私有仓库。先让新环境中的 GitHub 身份具备读取权限，再向 Codex 发送：
 
 ```text
---repo MIBXR/my-skills --ref v1.2.0 --path skills/desktop-pet-workflow skills/static-site-delivery --method git
+请使用 $skill-installer，从 MIBXR/my-skills 的 v1.3.0 标签安装
+skills/desktop-pet-workflow。
+使用当前已授权的 GitHub 身份；如果已经安装同名技能，先保留本地修改，再更新。
 ```
 
-脚本位置由当前 Codex 安装提供，先定位内置 skill-installer，不写死电脑路径。默认安装目录由 `CODEX_HOME` 决定；要试装到隔离目录可使用 `--dest`。已有同名技能时先比较和备份，再明确选择升级方式。
+要获取后续最新内容，可把版本改为 `main`。安装位置由当前环境决定；安装完成后按安装器提示使用。
 
-安装完成后重新打开 Codex 或按当前安装器提示刷新技能列表。可发送：
+## 可以这样调用
 
 ```text
-$desktop-pet-workflow 检查这组动画，修复挥手时的身体抖动，保留其他动作。
-$static-site-delivery 把这个展示网站整理为可以在新电脑恢复的源码。
+$desktop-pet-workflow 根据这些参考制作一只桌宠，先确定形象和动作思路。
+$desktop-pet-workflow 修复挥手时身体抖动，保留其他动作，并给出逐动作预览。
+$desktop-pet-workflow 把这些版本整理成作品仓库，素材解包保存，Release 放便携包。
+
+$desktop-pet-workflow 参考这个页面，为我的桌宠制作展示网站，并将源码和素材纳入 Git。
+$desktop-pet-workflow 宠物网站的动画模糊、边缘有杂色，检查已有高清原稿并修复。
+$desktop-pet-workflow 保存宠物网站的完整源码和素材，这次只整理，不部署。
 ```
 
-## 依赖和边界
+## 经验如何使用
 
-阅读技能不需要额外依赖。可选图集比较脚本需要 Python 3.10+ 和 Pillow；通过 `python -m pip install -r requirements-tools.txt` 安装。制作、修图、应用导入或网站发布使用目标环境现有工具及认证，技能不会自动安装插件或迁移登录态。
+这些方法来自实际的桌宠制作、动画返工、网站制作与仓库整理。角色特征、配色和文案以当前作品为准；技能保留处理问题的方法，不携带旧项目的路径、账号、临时链接或素材。
 
-技能不包含本机绝对路径、账号实例、临时凭据、缓存或作品素材。参考来源见 [来源与维护](docs/maintenance.md)。
-
-## 验证和升级
-
-```sh
-python -m pip install -r requirements-tools.txt
-python -m unittest discover -s tests
-```
-
-修改技能后，使用当前内置 skill-creator 的 `quick_validate.py` 分别验证两个文件夹，并检查真实任务中的决策。发布新标签后在新环境按该标签安装。测试工具仅验证像素保留等确定性条件，不能证明画面质量或目标应用已正常播放。
+制作过程需要的图像工具、浏览器和发布能力，使用目标环境已有的工具与授权。作品仓库以介绍作品、保存创作过程和成果为主；临时加工工具与检查记录留在任务工作区。
