@@ -1,6 +1,6 @@
 # 来源与维护
 
-这两个技能从 [Suzuka Pets](https://github.com/MIBXR/suzuka-pets) 的实际制作、返工和源码迁移中提炼。作品仓库保存角色专属规范与详细修订证据；本仓库仅保存适用于未来任务的方法，不把某款角色的画风、帧数或历史应用行为作为普遍要求。
+这两个技能从 [Suzuka Pets](https://github.com/MIBXR/suzuka-pets) 与 [Hibiki](https://github.com/MIBXR/pet-hibiki-cheerleader-fullbody-handdrawn) 的实际制作、来源重建和仓库整理中提炼。作品仓库保存角色专属规范与终态来源证据；本仓库仅保存适用于未来任务的方法，不把某款角色的画风、帧数或历史应用行为作为普遍要求。
 
 技能使用 `SKILL.md`、按需参考文档和可选脚本组织，参考 [官方技能文档](https://developers.openai.com/plugins/build/skills)。官方插件和辅助脚本不复制进本仓库，使用时从目标环境获取。
 
