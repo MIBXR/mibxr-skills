@@ -1,4 +1,4 @@
-# My Skills
+# MIBXR Skills
 
 把桌宠制作、动作返工、作品保存与宠物展示网站的经验，整理成换一台电脑也能继续使用的 Codex 技能。
 
@@ -21,12 +21,12 @@
 
 ## 换电脑使用
 
-这是私有仓库。先让新环境中的 GitHub 身份具备读取权限，再向 Codex 发送：
+这是公开仓库，可以直接安装。向 Codex 发送：
 
 ```text
-请使用 $skill-installer，从 MIBXR/my-skills 的 v1.3.0 标签安装
+请使用 $skill-installer，从 MIBXR/mibxr-skills 的 v1.3.0 标签安装
 skills/desktop-pet-workflow。
-使用当前已授权的 GitHub 身份；如果已经安装同名技能，先保留本地修改，再更新。
+如果已经安装同名技能，先保留本地修改，再更新。
 ```
 
 要获取后续最新内容，可把版本改为 `main`。安装位置由当前环境决定；安装完成后按安装器提示使用。
