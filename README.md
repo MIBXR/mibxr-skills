@@ -4,8 +4,8 @@
 
 | 技能 | 用途 |
 | --- | --- |
-| [desktop-pet-workflow](skills/desktop-pet-workflow/SKILL.md) | 桌宠制作、局部修复、来源重建、仓库整理和便携交付 |
-| [static-site-delivery](skills/static-site-delivery/SKILL.md) | 展示网站源码整理、下载对应关系、远端发布及恢复 |
+| [desktop-pet-workflow](skills/desktop-pet-workflow/SKILL.md) | 桌宠制作、局部修复、作品资料整理与便携交付 |
+| [static-site-delivery](skills/static-site-delivery/SKILL.md) | 展示网站完整源码、素材、下载资源与独立发布 |
 
 ## 换电脑安装
 
@@ -19,7 +19,7 @@ gh auth setup-git --hostname github.com
 在 Codex 中使用内置 `$skill-installer`，发送：
 
 ```text
-请从 MIBXR/my-skills 的 v1.1.0 标签安装
+请从 MIBXR/my-skills 的 v1.2.0 标签安装
 skills/desktop-pet-workflow 和 skills/static-site-delivery。
 这是私有仓库，请使用当前已授权的 GitHub 身份。
 ```
@@ -27,7 +27,7 @@ skills/desktop-pet-workflow 和 skills/static-site-delivery。
 也可调用当前安装版本的官方 `install-skill-from-github.py`，传入：
 
 ```text
---repo MIBXR/my-skills --ref v1.1.0 --path skills/desktop-pet-workflow skills/static-site-delivery --method git
+--repo MIBXR/my-skills --ref v1.2.0 --path skills/desktop-pet-workflow skills/static-site-delivery --method git
 ```
 
 脚本位置由当前 Codex 安装提供，先定位内置 skill-installer，不写死电脑路径。默认安装目录由 `CODEX_HOME` 决定；要试装到隔离目录可使用 `--dest`。已有同名技能时先比较和备份，再明确选择升级方式。

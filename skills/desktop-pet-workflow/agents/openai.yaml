@@ -1,4 +1,4 @@
 interface:
   display_name: "桌宠制作与修复"
-  short_description: "制作和修复桌宠动画，核验正式图集、真实播放及可迁移安装包"
-  default_prompt: "请使用 $desktop-pet-workflow 处理这次桌宠制作或修复，并验证最终交付。"
+  short_description: "制作和修复桌宠动画，保存参考、提示词、高清原稿与便携成品"
+  default_prompt: "请使用 $desktop-pet-workflow 处理这次桌宠制作、修复或作品资料整理。"
