@@ -1,8 +1,30 @@
 # MIBXR Skills
 
-把桌宠制作、动作返工、作品保存与宠物展示网站的经验，整理成换一台电脑也能继续使用的 Codex 技能。
+把桌宠制作与前端设计参考的工作方法，整理成换一台电脑也能继续使用的 Codex 技能。
 
-当前版本：**v1.4.0**。使用 `$desktop-pet-workflow` 调用，也可由 Codex 根据桌宠或宠物网站任务自动识别。
+桌宠技能当前稳定版：**v1.4.0**。使用 `$desktop-pet-workflow` 或 `$design-atlas` 调用，也可由 Codex 根据任务自动识别。
+
+## 前端设计参考
+
+`$design-atlas` 把 [Design Atlas](https://github.com/MIBXR/design-atlas) 接入真实网站任务：按用途和视觉要求检索案例，读取完整源码、提示词和设计上下文，再适配当前产品的内容、技术栈和交互。
+
+本仓库只保存工作流、检索脚本与上游版本锁。案例数据、完整前端、视觉预览和提示词仍由 `MIBXR/design-atlas` 维护；人可以继续使用网站，Agent 可以直接检索和获取案例，无需手动打开页面再复制材料。
+
+获取的案例包同时保留网页右侧说明的实际渲染内容、完整原始字段与文档，让 Agent 能核对网页说明与结构化资料。
+
+[阅读技能正文](skills/design-atlas/SKILL.md)。检索脚本使用 Python 标准库，默认从锁定的上游 Git commit 获取资料，同一次任务使用同一版本。更新案例库时显式更新版本锁，既保留可复现性，也允许独立更新大型案例库。
+
+```text
+请使用 $skill-installer，从 MIBXR/mibxr-skills 的 main 分支安装
+skills/design-atlas。
+如果已经安装同名技能，先保留本地修改，再更新。
+```
+
+```text
+$design-atlas 为这个 B2B 分析工具寻找适合高密度信息的设计，读取候选案例的完整上下文，再适配我的 React 项目。
+$design-atlas 参考 apple-product 的产品叙事和空间节奏，为我的真实产品实现落地页。
+$design-atlas 对比两种适合个人作品集的风格，说明选择依据并实现合适的方案。
+```
 
 ## 桌宠制作与交付
 
