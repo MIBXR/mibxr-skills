@@ -4,13 +4,16 @@
 import argparse
 import hashlib
 import json
+import os
 import re
 import shutil
 import sys
+import tempfile
 import urllib.error
 import urllib.parse
 import urllib.request
 from pathlib import Path, PurePosixPath
+from datetime import datetime, timezone
 
 SKILL_ROOT = Path(__file__).resolve().parent.parent
 HASH = re.compile(r"^[0-9a-f]{64}$")
@@ -58,25 +61,58 @@ def verify_data(data, record):
 
 def parse_json(data, name):
     try:
-        return json.loads(data.decode("utf-8-sig"))
+        value = json.loads(data.decode("utf-8-sig"))
     except (ValueError, UnicodeError) as exc:
         raise AtlasError(f"Invalid UTF-8 JSON at {name}: {exc}") from exc
+    if not isinstance(value, dict):
+        raise AtlasError(f'Expected a JSON object at {name}')
+    return value
 
 
 class Atlas:
     def __init__(self, args):
         lock = parse_json((SKILL_ROOT / "upstream.lock.json").read_bytes(), "upstream.lock.json")
         self.repository = lock["repository"]
-        self.ref = args.ref or lock["ref"]
         if not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", self.repository):
             raise AtlasError("Invalid repository in upstream.lock.json")
-        if not COMMIT.fullmatch(self.ref):
-            raise AtlasError("--ref and upstream.lock.json must use a full 40-character Git commit")
+        explicit_ref = args.ref
+        if explicit_ref and not COMMIT.fullmatch(explicit_ref):
+            raise AtlasError("--ref must use a full 40-character Git commit")
+        self.session = Path(args.session).absolute() if args.session else None
+        self.previous_ref = None
+        self.default_branch = None
+        saved_session = None
+        if self.session:
+            no_symlinks(self.session)
+            self.session = self.session.resolve()
+            if self.session == SKILL_ROOT or SKILL_ROOT in self.session.parents:
+                raise AtlasError("Save --session in the user's working directory, outside the installed skill")
+            if self.session.exists():
+                saved_session = parse_json(self.session.read_bytes(), str(self.session))
+                if saved_session.get('sessionVersion') != 1 or saved_session.get('repository') != self.repository or saved_session.get('schemaVersion') != lock['schemaVersion']:
+                    raise AtlasError('Session repository or schema is incompatible; use a separate session file')
+                if not COMMIT.fullmatch(str(saved_session.get('ref', ''))) or not HASH.fullmatch(str(saved_session.get('contentVersion', ''))):
+                    raise AtlasError('Session ref or contentVersion is invalid')
+                self.previous_ref = saved_session['ref']
+                self.default_branch = saved_session.get('defaultBranch')
         self.local = Path(args.local_root).absolute() if args.local_root else None
         if self.local:
             no_symlinks(self.local)
             if not self.local.is_dir():
                 raise AtlasError(f"Local checkout does not exist: {self.local}")
+            self.ref = None
+            self.resolution = 'local'
+        elif saved_session and args.command != 'refresh':
+            if explicit_ref and explicit_ref != saved_session['ref']:
+                raise AtlasError('--ref differs from this session; use a separate session file')
+            self.ref = saved_session['ref']
+            self.resolution = 'session'
+        elif explicit_ref:
+            self.ref = explicit_ref
+            self.resolution = 'explicit-ref'
+        else:
+            self.ref, self.default_branch = self.resolve_latest()
+            self.resolution = 'latest-default-branch'
         self.base = f"https://raw.githubusercontent.com/{self.repository}/{self.ref}/"
         self.catalog = parse_json(self.read(lock["catalog"]), lock["catalog"])
         if self.catalog.get("schemaVersion") != lock["schemaVersion"]:
@@ -102,6 +138,57 @@ class Atlas:
         version = ''.join(f"{case_id}:{self.entries[case_id]['bundleSha256']}\n" for case_id in sorted(self.entries))
         if digest(version.encode('utf-8')) != self.catalog['contentVersion']:
             raise AtlasError('Catalog contentVersion differs from its case hashes')
+        if saved_session and args.command != 'refresh' and saved_session['contentVersion'] != self.catalog['contentVersion']:
+            raise AtlasError('Session catalog contentVersion differs from the pinned catalog')
+        if self.session and (saved_session is None or args.command == 'refresh'):
+            self.write_session(replace=saved_session is not None)
+
+    def resolve_latest(self):
+        api = f'https://api.github.com/repos/{self.repository}'
+        def request_json(url):
+            request = urllib.request.Request(url, headers={'User-Agent': 'mibxr-design-atlas-skill/1', 'Accept': 'application/vnd.github+json'})
+            try:
+                with urllib.request.urlopen(request, timeout=60) as response:
+                    return parse_json(response.read(), url)
+            except (OSError, urllib.error.URLError) as exc:
+                raise AtlasError(f'Cannot resolve the latest default-branch commit: {exc}. Use an existing --session, an explicit --ref, or --local-root.') from exc
+        repository = request_json(api)
+        branch = repository.get('default_branch')
+        if not isinstance(branch, str) or not branch:
+            raise AtlasError('GitHub did not return a default branch')
+        commit = request_json(api + '/commits/' + urllib.parse.quote(branch, safe=''))
+        ref = commit.get('sha')
+        if not isinstance(ref, str) or not COMMIT.fullmatch(ref):
+            raise AtlasError('GitHub did not return a full commit SHA for the default branch')
+        return ref, branch
+
+    def write_session(self, replace):
+        state = {
+            'sessionVersion': 1, 'repository': self.repository, 'ref': self.ref,
+            'defaultBranch': self.default_branch, 'schemaVersion': self.catalog['schemaVersion'],
+            'contentVersion': self.catalog['contentVersion'],
+            'resolvedAt': datetime.now(timezone.utc).isoformat(),
+        }
+        no_symlinks(self.session)
+        self.session.parent.mkdir(parents=True, exist_ok=True)
+        descriptor, temporary = tempfile.mkstemp(prefix='.atlas-session-', suffix='.tmp', dir=self.session.parent)
+        temporary = Path(temporary)
+        try:
+            with os.fdopen(descriptor, 'w', encoding='utf-8', newline='\n') as handle:
+                json.dump(state, handle, ensure_ascii=False, indent=2)
+                handle.write('\n')
+                handle.flush()
+                os.fsync(handle.fileno())
+            no_symlinks(self.session)
+            if replace:
+                os.replace(temporary, self.session)
+            else:
+                try:
+                    os.link(temporary, self.session)
+                except FileExistsError as exc:
+                    raise AtlasError('Another command created this session; rerun to use its pinned version') from exc
+        finally:
+            temporary.unlink(missing_ok=True)
 
     def url(self, path):
         path_parts(path)
@@ -130,6 +217,9 @@ class Atlas:
             "localRoot": str(self.local) if self.local else None,
             "contentVersion": self.catalog["contentVersion"],
             "schemaVersion": self.catalog["schemaVersion"],
+            "resolution": self.resolution,
+            "defaultBranch": self.default_branch,
+            "session": str(self.session) if self.session else None,
         }
 
     def bundle(self, case_id):
@@ -187,7 +277,8 @@ def search(atlas, args):
         summary["matches"] = matches
         results.append(summary)
     results.sort(key=lambda row: (-row["score"], row["id"]))
-    emit({"schemaVersion": 1, "contentVersion": atlas.catalog['contentVersion'], "provenance": atlas.provenance(), "query": args.query, "method": "keyword", "total": len(results), "results": results[:args.limit]})
+    offset = args.offset
+    emit({"schemaVersion": 1, "contentVersion": atlas.catalog['contentVersion'], "provenance": atlas.provenance(), "query": args.query, "method": "keyword", "total": len(results), "offset": offset, "limit": args.limit, "hasMore": offset + args.limit < len(results), "results": results[offset:offset + args.limit]})
 
 
 def show(atlas, args):
@@ -248,12 +339,14 @@ def export(atlas, args):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--local-root", help="Read a local Design Atlas checkout without network access")
-    parser.add_argument("--ref", help="Override the lock with an explicit full 40-character Git commit")
+    parser.add_argument("--ref", help="Retrieve an explicit full 40-character Git commit for reproduction")
+    parser.add_argument("--session", help="Pin this workflow's resolved commit in a JSON file in the user's working directory")
     commands = parser.add_subparsers(dest="command", required=True)
     find = commands.add_parser("search", help="Search case metadata by keywords")
     find.add_argument("query", nargs="?", default="")
     find.add_argument("--category", help="Exact category filter")
     find.add_argument("--limit", type=int, default=5)
+    find.add_argument("--offset", type=int, default=0, help="Skip this many ranked results when paging through the complete directory")
     detail = commands.add_parser("show", help="Read the full case bundle and optionally full source")
     detail.add_argument("case_id")
     detail.add_argument("--source", action="store_true")
@@ -262,9 +355,16 @@ def main():
     save.add_argument("--out", required=True)
     save.add_argument("--code-only", action="store_true", help="Download source/context and explicitly list omitted media")
     info = commands.add_parser("info", help="Verify the catalog and report the active upstream version")
+    commands.add_parser("refresh", help="Resolve the latest default-branch commit and atomically refresh --session")
     args = parser.parse_args()
     if hasattr(args, "limit") and not 1 <= args.limit <= 100:
         parser.error("--limit must be from 1 to 100")
+    if hasattr(args, 'offset') and args.offset < 0:
+        parser.error('--offset must be a non-negative integer')
+    if args.local_root and (args.ref or args.session):
+        parser.error('--local-root is an independent offline mode; use it without --ref or --session')
+    if args.command == 'refresh' and (not args.session or args.ref or args.local_root):
+        parser.error('refresh requires --session and resolves the latest version; omit --ref and --local-root')
     try:
         atlas = Atlas(args)
         if args.command == "search":
@@ -274,7 +374,10 @@ def main():
         elif args.command == "export":
             export(atlas, args)
         else:
-            emit({"provenance": atlas.provenance(), "entryCount": len(atlas.entries)})
+            result = {"provenance": atlas.provenance(), "entryCount": len(atlas.entries)}
+            if args.command == 'refresh':
+                result.update({'previousRef': atlas.previous_ref, 'refChanged': atlas.previous_ref != atlas.ref})
+            emit(result)
         return 0
     except (AtlasError, OSError, KeyError, TypeError) as exc:
         print(f"design-atlas: {exc}", file=sys.stderr)
