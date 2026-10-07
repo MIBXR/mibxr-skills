@@ -6,13 +6,15 @@
 
 ## 前端设计参考
 
-`$design-atlas` 把 [Design Atlas](https://github.com/MIBXR/design-atlas) 接入真实网站任务：按用途和视觉要求检索案例，读取完整源码、提示词和设计上下文，再适配当前产品的内容、技术栈和交互。
+`$design-atlas` 把 [Design Atlas](https://github.com/MIBXR/design-atlas) 接入真实网站任务：先查看目录和检索案例，围绕当前需求迭代筛选，再自动读取最终案例的完整源码、提示词与设计上下文，实现当前产品的内容、技术栈和交互。用户无需先知道案例 ID。
 
-本仓库只保存工作流、检索脚本与上游版本锁。案例数据、完整前端、视觉预览和提示词仍由 `MIBXR/design-atlas` 维护；人可以继续使用网站，Agent 可以直接检索和获取案例，无需手动打开页面再复制材料。
+本仓库只保存工作流、检索脚本与上游配置。案例数据、完整前端、视觉预览和提示词仍由 `MIBXR/design-atlas` 维护；人可以继续使用网站，Agent 可以直接检索和获取案例，无需手动打开页面再复制材料。
 
 获取的案例包同时保留网页右侧说明的实际渲染内容、完整原始字段与文档，让 Agent 能核对网页说明与结构化资料。
 
-[阅读技能正文](skills/design-atlas/SKILL.md)。检索脚本使用 Python 标准库，默认从锁定的上游 Git commit 获取资料，同一次任务使用同一版本。更新案例库时显式更新版本锁，既保留可复现性，也允许独立更新大型案例库。
+[阅读技能正文](skills/design-atlas/SKILL.md)。检索脚本使用 Python 标准库，新会话从上游默认分支解析最新 Git SHA，所以新增案例可以自动被发现；同一任务通过用户工作目录中的 `--session` 固定版本，探索和完整取材保持一致。`refresh` 显式更新会话，`--ref` 支持复现指定版本，`--local-root` 支持离线读取。技能安装目录不保存会话状态。
+
+在仓库根目录运行 `python -m unittest discover -s tests -v` 可执行标准库行为测试；测试无需联网，安装技能时无需携带 `tests/`。
 
 ```text
 请使用 $skill-installer，从 MIBXR/mibxr-skills 的 main 分支安装

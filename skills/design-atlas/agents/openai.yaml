@@ -1,4 +1,4 @@
 interface:
   display_name: "Design Atlas 前端设计参考"
-  short_description: "按真实网站任务检索设计案例，读取完整上下文并适配实现与验证"
-  default_prompt: "请使用 $design-atlas 为当前网站检索合适的设计案例，读取完整源码、提示词和设计上下文，再适配真实内容并验证页面。"
+  short_description: "探索案例并围绕需求迭代筛选，再自动取得完整设计资料实现网站"
+  default_prompt: "请使用 $design-atlas 先探索案例库，围绕当前网站需求迭代筛选，再自动读取选中案例的完整资料，实现并验证页面。"
