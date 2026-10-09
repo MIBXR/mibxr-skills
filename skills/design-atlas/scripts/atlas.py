@@ -20,6 +20,7 @@ HASH = re.compile(r"^[0-9a-f]{64}$")
 COMMIT = re.compile(r"^[0-9a-f]{40}$")
 ROLES = {"source", "asset", "context", "preview"}
 PATTERN_ROLES = {"foundation", "support", "accent"}
+EXPERIENCE_TYPES = ('visual', 'micro-motion', 'page-motion', 'sound', 'structure')
 
 
 class AtlasError(Exception):
@@ -294,6 +295,10 @@ class Atlas:
             for field in ('useCases', 'avoid', 'constraints', 'sourceFiles'):
                 if not isinstance(row.get(field), list) or any(not isinstance(value, str) for value in row[field]):
                     raise AtlasError(f'Pattern {pattern_id} has invalid {field}')
+            if 'experienceTypes' in row:
+                types = row['experienceTypes']
+                if not isinstance(types, list) or not types or any(value not in EXPERIENCE_TYPES for value in types) or len(set(types)) != len(types):
+                    raise AtlasError(f'Pattern {pattern_id} has invalid experienceTypes')
             for path in row['sourceFiles']:
                 path_parts(path)
             if not row['sourceFiles'] or len({p.casefold() for p in row['sourceFiles']}) != len(row['sourceFiles']):
@@ -448,11 +453,15 @@ def show(atlas, args):
 
 def pattern_search(atlas, args):
     atlas.require_patterns()
+    if args.type and not any('experienceTypes' in pattern for pattern in atlas.patterns.values()):
+        raise AtlasError('This pinned Atlas version has no experience type classifications. Use --session SESSION_FILE refresh, a newer --ref, or an updated --local-root to filter by --type.')
     terms = list(dict.fromkeys(term.casefold() for term in re.split(r'[\s,，;；]+', args.query) if term))
-    fields = ['id', 'title', 'category', 'summary', 'mechanism', 'trigger', 'effect', 'useCases', 'avoid', 'constraints', 'composition', 'accessibility', 'parameters', 'sources', 'sourceCases']
+    fields = ['id', 'title', 'category', 'experienceTypes', 'summary', 'mechanism', 'trigger', 'effect', 'useCases', 'avoid', 'constraints', 'composition', 'accessibility', 'parameters', 'sources', 'sourceCases']
     results = []
     for pattern in atlas.patterns.values():
         if args.category and pattern['category'].casefold() != args.category.casefold():
+            continue
+        if args.type and args.type not in pattern.get('experienceTypes', []):
             continue
         case_ids = sorted({source['caseId'] for source in pattern['sources']})
         if args.case and args.case not in case_ids:
@@ -466,10 +475,10 @@ def pattern_search(atlas, args):
             continue
         score = sum(4 if field in {'id', 'title', 'useCases', 'mechanism'} else 1 if field in {'avoid', 'constraints'} else 2 for match in matches for field in match['fields'])
         result = {key: pattern[key] for key in ('id', 'title', 'category', 'summary', 'trigger', 'effect', 'useCases', 'avoid', 'constraints', 'composition', 'accessibility', 'sources', 'sourceFiles', 'paths')}
-        result.update({'sourceCases': source_cases, 'score': score, 'matches': matches})
+        result.update({'experienceTypes': pattern.get('experienceTypes', []), 'sourceCases': source_cases, 'score': score, 'matches': matches})
         results.append(result)
     results.sort(key=lambda row: (-row['score'], row['id']))
-    emit({'schemaVersion': 1, 'contentVersion': atlas.catalog['contentVersion'], 'patternContentVersion': atlas.pattern_catalog['contentVersion'], 'provenance': atlas.provenance(), 'query': args.query, 'filters': {'category': args.category, 'case': args.case}, 'method': 'keyword', 'total': len(results), 'offset': args.offset, 'limit': args.limit, 'hasMore': args.offset + args.limit < len(results), 'results': results[args.offset:args.offset + args.limit]})
+    emit({'schemaVersion': 1, 'contentVersion': atlas.catalog['contentVersion'], 'patternContentVersion': atlas.pattern_catalog['contentVersion'], 'provenance': atlas.provenance(), 'query': args.query, 'filters': {'category': args.category, 'type': args.type, 'case': args.case}, 'method': 'keyword', 'total': len(results), 'offset': args.offset, 'limit': args.limit, 'hasMore': args.offset + args.limit < len(results), 'results': results[args.offset:args.offset + args.limit]})
 
 
 def pattern_show(atlas, args):
@@ -581,6 +590,7 @@ def main():
     pattern_find = commands.add_parser('pattern-search', help='Search reusable design patterns across source cases')
     pattern_find.add_argument('query', nargs='?', default='')
     pattern_find.add_argument('--category', help='Exact pattern category filter')
+    pattern_find.add_argument('--type', choices=EXPERIENCE_TYPES, help='Experience type filter; matches patterns containing this type')
     pattern_find.add_argument('--case', help='Source case ID filter')
     pattern_find.add_argument('--limit', type=int, default=5)
     pattern_find.add_argument('--offset', type=int, default=0, help='Skip this many ranked patterns; continue until hasMore is false')
