@@ -34,6 +34,7 @@ def with_patterns(files, count=2):
         source_files += ['research/' + entry['id'] + '.md' for entry in sources]
         pattern = {
             'id': pattern_id, 'title': '焦点 Focus ' + str(number), 'category': '交互反馈',
+            'experienceTypes': ['visual', 'micro-motion'] if number == 0 else ['page-motion'],
             'summary': '首屏悬停聚焦', 'mechanism': 'Opacity focus for the active card',
             'trigger': 'pointer hover / keyboard focus', 'effect': 'Keep attention on one item',
             'useCases': ['产品入口', 'portfolio'], 'avoid': ['密集长文'],
@@ -52,8 +53,8 @@ def with_patterns(files, count=2):
     return reseal(files)
 
 
-def search_args(query='', category=None, case=None, limit=100, offset=0):
-    return argparse.Namespace(query=query, category=category, case=case, limit=limit, offset=offset)
+def search_args(query='', category=None, case=None, limit=100, offset=0, experience_type=None):
+    return argparse.Namespace(query=query, category=category, case=case, limit=limit, offset=offset, type=experience_type)
 
 
 class DesignPatternTests(unittest.TestCase):
@@ -97,6 +98,7 @@ class DesignPatternTests(unittest.TestCase):
         shown = capture_json(lambda: atlas.pattern_show(active, argparse.Namespace(pattern_id='focus-000', source=True)))
         self.assertEqual(shown['provenance']['ref'], REF_B)
         self.assertEqual(shown['pattern']['composition']['role'], 'accent')
+        self.assertEqual(shown['pattern']['experienceTypes'], ['visual', 'micro-motion'])
         self.assertTrue(shown['pattern']['accessibility']['reducedMotion'])
         self.assertTrue(shown['pattern']['prompt'])
         self.assertEqual({case['id'] for case in shown['sourceCaseBundles']}, {'old-style', 'new-style'})
@@ -154,6 +156,7 @@ class DesignPatternTests(unittest.TestCase):
                 self.assertEqual(metadata['provenance']['ref'], REF_B)
                 self.assertEqual(metadata['provenance']['contentVersion'], active.catalog['contentVersion'])
                 self.assertEqual(metadata['sourceFiles'], metadata['bundle']['pattern']['sourceFiles'])
+                self.assertEqual(metadata['bundle']['pattern']['experienceTypes'], ['visual', 'micro-motion'])
                 self.assertEqual(len(metadata['sourceCaseBundles']), 2)
                 self.assertEqual(len(result['entrypoints']), 2)
                 self.assertEqual(len(metadata['files']), 4 if code_only else 6)
@@ -239,6 +242,7 @@ class DesignPatternTests(unittest.TestCase):
         mutations = [
             (lambda bundle: bundle.update(id='wrong-pattern'), 'identity'),
             (lambda bundle: bundle['pattern'].update(title='changed'), 'metadata mismatch'),
+            (lambda bundle: bundle['pattern'].update(experienceTypes=['sound']), 'metadata mismatch'),
             (lambda bundle: bundle['sourceCases'][0].update(id='missing'), 'source case identity'),
             (lambda bundle: bundle['sourceCases'][0].update(bundleSha256='0' * 64), 'source case metadata or SHA-256'),
             (lambda bundle: bundle['sourceCases'][0]['paths'].update(demo='demos/other/index.html'), 'source case metadata or SHA-256'),
@@ -288,7 +292,67 @@ class DesignPatternTests(unittest.TestCase):
         self.assertFalse(out.exists())
 
     def test_pattern_commands_accept_the_shared_session_and_filters(self):
-        with patch.object(atlas.sys, 'argv', ['atlas.py', '--session', str(self.session), 'pattern-search', '焦点', '--case', 'old-style', '--category', '交互反馈', '--limit', '1', '--offset', '0']):
+        with patch.object(atlas.sys, 'argv', ['atlas.py', '--session', str(self.session), 'pattern-search', '焦点', '--case', 'old-style', '--category', '交互反馈', '--type', 'micro-motion', '--limit', '1', '--offset', '0']):
             capture = capture_json(lambda: self.assertEqual(atlas.main(), 0))
         self.assertEqual(capture['total'], 1)
         self.assertEqual(capture['provenance']['ref'], REF_B)
+        self.assertEqual(capture['filters']['type'], 'micro-motion')
+
+    def test_experience_filter_matches_multi_type_patterns_without_source_inheritance(self):
+        active = atlas.Atlas(args())
+        for experience_type, expected in [('visual', ['focus-000']), ('micro-motion', ['focus-000']), ('page-motion', ['focus-001']), ('sound', []), ('structure', [])]:
+            with self.subTest(experience_type=experience_type):
+                result = capture_json(lambda: atlas.pattern_search(active, search_args(experience_type=experience_type)))
+                self.assertEqual([row['id'] for row in result['results']], expected)
+                for row in result['results']:
+                    self.assertIn(experience_type, row['experienceTypes'])
+        filtered = capture_json(lambda: atlas.pattern_search(active, search_args(case='old-style', experience_type='page-motion')))
+        self.assertEqual(filtered['total'], 0)
+        keyword = capture_json(lambda: atlas.pattern_search(active, search_args(query='micro-motion')))
+        self.assertEqual([row['id'] for row in keyword['results']], ['focus-000'])
+        self.assertIn('experienceTypes', keyword['results'][0]['matches'][0]['fields'])
+
+    def test_unclassified_pinned_patterns_remain_readable_until_explicit_refresh(self):
+        files = copy.deepcopy(self.versions[REF_B])
+        catalog = json.loads(files['agent/patterns.json'])
+        for row in catalog['patterns']:
+            del row['experienceTypes']
+            bundle = json.loads(files[row['paths']['bundle']])
+            del bundle['pattern']['experienceTypes']
+            files[row['paths']['bundle']] = encode(bundle)
+        files['agent/patterns.json'] = encode(catalog)
+        self.versions[REF_B] = reseal(files)
+        old = atlas.Atlas(args(self.session))
+        state = self.session.read_bytes()
+        searched = capture_json(lambda: atlas.pattern_search(old, search_args()))
+        self.assertTrue(all(row['experienceTypes'] == [] for row in searched['results']))
+        shown = capture_json(lambda: atlas.pattern_show(old, argparse.Namespace(pattern_id='focus-000', source=True)))
+        self.assertNotIn('experienceTypes', shown['pattern'])
+        with self.assertRaisesRegex(atlas.AtlasError, 'no experience type classifications.*refresh'):
+            atlas.pattern_search(old, search_args(experience_type='micro-motion'))
+        self.versions[REF_C] = with_patterns(make_version(REF_C, ['old-style', 'new-style']))
+        self.latest = REF_C
+        pinned = atlas.Atlas(args(self.session))
+        self.assertEqual(pinned.ref, REF_B)
+        self.assertEqual(self.session.read_bytes(), state)
+        updated = atlas.Atlas(args(self.session, 'refresh'))
+        searched = capture_json(lambda: atlas.pattern_search(updated, search_args(experience_type='micro-motion')))
+        self.assertEqual([row['id'] for row in searched['results']], ['focus-000'])
+        self.assertEqual(searched['provenance']['ref'], REF_C)
+
+    def test_invalid_experience_classifications_preserve_the_pinned_session(self):
+        self.latest = REF_A
+        atlas.Atlas(args(self.session))
+        state = self.session.read_bytes()
+        self.latest = REF_B
+        valid = copy.deepcopy(self.versions[REF_B])
+        for value in ([], 'visual', ['unknown'], ['visual', 'visual'], [None]):
+            with self.subTest(value=value):
+                files = copy.deepcopy(valid)
+                catalog = json.loads(files['agent/patterns.json'])
+                catalog['patterns'][0]['experienceTypes'] = value
+                files['agent/patterns.json'] = encode(catalog)
+                self.versions[REF_B] = reseal(files)
+                with self.assertRaisesRegex(atlas.AtlasError, 'invalid experienceTypes'):
+                    atlas.Atlas(args(self.session, 'refresh'))
+                self.assertEqual(self.session.read_bytes(), state)

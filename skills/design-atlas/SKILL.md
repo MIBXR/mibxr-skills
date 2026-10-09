@@ -1,6 +1,6 @@
 ---
 name: design-atlas
-description: 从 Design Atlas 探索前端案例与可组合的设计巧思，围绕真实需求筛选，自动取得源码、提示词和来源上下文来实现网站。用于选择风格、借鉴独立交互、跨案例组合或按指定案例构建页面；网站案例库维护使用其仓库说明。
+description: 从 Design Atlas 选择前端案例及视觉、微动效、页面动效、声音与内容组织巧思，自动取得源码、提示词和来源上下文来实现网站。用于选择风格、借鉴独立机制、跨案例组合或按指定案例构建页面；网站案例库维护使用其仓库说明。
 ---
 
 # Design Atlas 前端设计参考
@@ -22,12 +22,18 @@ python ATLAS_SCRIPT --session SESSION_FILE show linear-workflow --source
 python ATLAS_SCRIPT --session SESSION_FILE export linear-workflow --out NEW_DIRECTORY
 python ATLAS_SCRIPT --session SESSION_FILE pattern-search "" --limit 100 --offset 0
 python ATLAS_SCRIPT --session SESSION_FILE pattern-search "悬停 聚焦" --limit 5
+python ATLAS_SCRIPT --session SESSION_FILE pattern-search "" --type visual --limit 100
+python ATLAS_SCRIPT --session SESSION_FILE pattern-search "按钮" --type micro-motion
+python ATLAS_SCRIPT --session SESSION_FILE pattern-search "切换" --type page-motion
+python ATLAS_SCRIPT --session SESSION_FILE pattern-search "" --type sound
 python ATLAS_SCRIPT --session SESSION_FILE pattern-search "" --category "交互反馈" --case chatgpt-platform
 python ATLAS_SCRIPT --session SESSION_FILE pattern-show PATTERN_ID --source
 python ATLAS_SCRIPT --session SESSION_FILE pattern-export PATTERN_ID --out NEW_DIRECTORY
 ```
 
-按当前任务选择 `search`（完整案例）或 `pattern-search`（独立巧思），空查询读取目录。若 `hasMore` 为 `true`，保持同一会话、查询与过滤，把 `--offset` 增加本次 `limit` 继续读取，直到 `hasMore` 为 `false`；单页上限为 100，两个目录的总量均不限。查询支持中文和英文关键词，输出命中字段、适用场景与谨慎使用项；分数用于排序，适合程度结合真实需求判断。巧思可按 `--category` 分类、按 `--case` 来源案例过滤。
+按当前任务选择 `search`（完整案例）或 `pattern-search`（独立巧思），空查询读取目录。若 `hasMore` 为 `true`，保持同一会话、查询与过滤，把 `--offset` 增加本次 `limit` 继续读取，直到 `hasMore` 为 `false`；单页上限为 100，两个目录的总量均不限。查询支持中文和英文关键词，输出命中字段、适用场景与谨慎使用项；分数用于排序，适合程度结合真实需求判断。巧思可按单个 `--type` 体验类型、`--category` 功能分类、`--case` 来源案例共同过滤；`experienceTypes` 可含多个类型，命中其中一个即符合类型过滤。
+
+体验类型由上游逐项标注：`visual` 是排版、色彩、装饰和形状等静态视觉机制；`micro-motion` 是按钮、卡片等局部反馈或辅助动效；`page-motion` 是首屏、滚动叙事、页面过渡等主体动效；`sound` 是背景音乐和操作音；`structure` 是内容组织、导航和信息关系。按当前产品的问题筛选，不要求每个案例具备全部类型，也不为凑类型拆分机制。声音适用于游戏、品牌叙事等确有听觉需求的场景，结合声音巧思包的来源观察与核验边界选择。
 
 需要取得后来新增的案例或巧思时，显式刷新会话后重新检索：
 
@@ -35,7 +41,7 @@ python ATLAS_SCRIPT --session SESSION_FILE pattern-export PATTERN_ID --out NEW_D
 python ATLAS_SCRIPT --session SESSION_FILE refresh
 ```
 
-刷新先验证案例索引、巧思索引的仓库、schema、清单与摘要，再原子替换会话；失败保留原会话。无需会话的 `info` 查看当前最新版本及两个目录的数量。默认解析失败会明确报错；已有会话、`--ref FULL_COMMIT` 复现模式及 `--local-root CHECKOUT` 离线模式各自可用。后两种模式的全局参数也放在子命令前。旧版本仍支持案例命令；缺少巧思目录时工具提示刷新或选择新版。`upstream.lock.json` 保存上游配置和已验证基线，基线不限制默认发现新增内容。
+刷新先验证案例索引、巧思索引的仓库、schema、清单与摘要，再原子替换会话；失败保留原会话。无需会话的 `info` 查看当前最新版本及两个目录的数量。默认解析失败会明确报错；已有会话、`--ref FULL_COMMIT` 复现模式及 `--local-root CHECKOUT` 离线模式各自可用。后两种模式的全局参数也放在子命令前。旧版本仍支持案例命令；缺少巧思目录或体验类型时工具提示刷新或选择新版。无类型标注的旧巧思仍可读取、导出和不带 `--type` 检索，检索输出中的空 `experienceTypes` 表示未分类。`upstream.lock.json` 保存上游配置和已验证基线，基线不限制默认发现新增内容。
 
 ## 探索并迭代筛选
 
@@ -59,6 +65,6 @@ python ATLAS_SCRIPT --session SESSION_FILE refresh
 
 ## 验证并交付
 
-按当前项目方式构建和运行，检查真实内容下的主要页面、窄屏布局、关键交互、键盘操作、减少动态、可读性及资源加载。对照选中案例检查设计依据是否落实；同一任务的材料来自同一会话 SHA，刷新后需要重新确认候选与资料。
+按当前项目方式构建和运行，检查真实内容下的主要页面、窄屏布局、关键交互、键盘操作、减少动态、可读性及资源加载。动效实测起始、过程、完成与回程；声音实测触发、静音、重复播放、手机入口和后台行为，记录未验证项及本地适配边界。对照选中案例检查设计依据是否落实；同一任务的材料来自同一会话 SHA，刷新后需要重新确认候选与资料。
 
 交付时列明引用的案例／巧思 ID、上游版本、组合职责、完成的适配和实际验证结果。[Agent 协议说明](https://github.com/MIBXR/design-atlas/blob/master/AGENT.md) 与 `agent/catalog.json`、`agent/cases/<id>.json`、`agent/patterns.json`、`agent/patterns/<id>.json` 提供直接读取入口；当前项目的运行结果决定交付是否完成。
