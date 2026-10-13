@@ -1,7 +1,7 @@
 {
   "repository": "MIBXR/design-atlas",
   "default": "latest-default-branch",
-  "baselineRef": "e9f349cf3cf3728d7926746b21a65f66b4fd80dd",
+  "baselineRef": "8295a6b295d207b77c724da8d3bcba114d19a92b",
   "catalog": "agent/catalog.json",
   "schemaVersion": 1
 }

@@ -139,14 +139,21 @@ class Atlas:
             self.entries[case_id] = entry
         self.patterns = None
         self.pattern_catalog = None
+        self.materials = None
+        self.material_catalog = None
         version = ''.join(f"{case_id}:{self.entries[case_id]['bundleSha256']}\n" for case_id in sorted(self.entries))
         if 'patterns' in self.catalog:
             self.load_patterns(self.catalog['patterns'])
             version += f"patterns:{self.pattern_catalog['contentVersion']}\n"
+        if 'materials' in self.catalog:
+            self.load_materials(self.catalog['materials'])
+            version += f"materials:{self.material_catalog['contentVersion']}\n"
         if digest(version.encode('utf-8')) != self.catalog['contentVersion']:
-            raise AtlasError('Catalog contentVersion differs from its case and pattern hashes')
+            raise AtlasError('Catalog contentVersion differs from its case, pattern and material hashes')
         if args.command.startswith('pattern-'):
             self.require_patterns()
+        if args.command.startswith('material-'):
+            self.require_materials()
         if saved_session and args.command != 'refresh' and saved_session['contentVersion'] != self.catalog['contentVersion']:
             raise AtlasError('Session catalog contentVersion differs from the pinned catalog')
         if self.session and (saved_session is None or args.command == 'refresh'):
@@ -243,24 +250,74 @@ class Atlas:
             raise AtlasError(f"Bundle identity or schemaVersion mismatch: {case_id}")
         if bundle.get("entry", {}).get("id") != case_id:
             raise AtlasError(f"Bundle entry identity mismatch: {case_id}")
-        documents = bundle.get("documents")
-        files = bundle.get("files")
-        if not isinstance(documents, list) or not isinstance(files, list):
-            raise AtlasError(f"Bundle documents/files are invalid: {case_id}")
-        seen = set()
-        for record in files:
-            path_parts(record.get("path"))
-            key = record["path"].casefold()
-            if key in seen or record["role"] not in ROLES:
-                raise AtlasError(f"Duplicate file path or invalid role: {record['path']}")
-            seen.add(key)
-            if not HASH.fullmatch(str(record.get("sha256", ""))) or not isinstance(record.get("bytes"), int):
-                raise AtlasError(f"Invalid file integrity metadata: {record['path']}")
-        for document in documents:
-            path_parts(document.get("path"))
-            if not isinstance(document.get("content"), str):
-                raise AtlasError(f"Document has no full text: {document.get('path')}")
-            verify_data(document["content"].encode("utf-8"), document)
+        validate_bundle_files(bundle, case_id)
+        return bundle
+
+    def load_materials(self, manifest):
+        if not isinstance(manifest, dict) or manifest.get('path') != 'agent/materials.json':
+            raise AtlasError('Invalid materials manifest path')
+        data = self.read(manifest['path'])
+        verify_data(data, manifest)
+        catalog = parse_json(data, manifest['path'])
+        if catalog.get('schemaVersion') != 1:
+            raise AtlasError('Material catalog schemaVersion is incompatible with this skill')
+        if catalog.get('repository') not in {self.repository, f'https://github.com/{self.repository}'}:
+            raise AtlasError('Material catalog repository differs from the case catalog')
+        rows = catalog.get('materials')
+        if not isinstance(rows, list) or catalog.get('materialCount') != len(rows) or manifest.get('materialCount') != len(rows):
+            raise AtlasError('Material catalog materials or materialCount are invalid')
+        self.materials = {}
+        for row in rows:
+            if not isinstance(row, dict):
+                raise AtlasError('Material catalog contains an invalid material')
+            material_id = row.get('id')
+            if not isinstance(material_id, str) or not re.fullmatch(r'[a-z0-9][a-z0-9-]*', material_id):
+                raise AtlasError('Material catalog contains an invalid material ID')
+            if material_id in self.materials:
+                raise AtlasError(f'Duplicate material ID: {material_id}')
+            if row.get('paths', {}).get('bundle') != f'agent/materials/{material_id}.json':
+                raise AtlasError(f'Material bundle path differs from its identity: {material_id}')
+            for path in row['paths'].values():
+                path_parts(path)
+            if not HASH.fullmatch(str(row.get('bundleSha256', ''))):
+                raise AtlasError(f'Invalid material bundleSha256: {material_id}')
+            for field in ('title', 'type', 'category', 'summary'):
+                if not isinstance(row.get(field), str) or not row[field].strip():
+                    raise AtlasError(f'Material {material_id} has no {field}')
+            for field in ('tags', 'useCases', 'avoid', 'constraints'):
+                if not isinstance(row.get(field), list) or any(not isinstance(value, str) for value in row[field]):
+                    raise AtlasError(f'Material {material_id} has invalid {field}')
+            self.materials[material_id] = row
+        version = ''.join(f"{material_id}:{self.materials[material_id]['bundleSha256']}\n" for material_id in sorted(self.materials))
+        if digest(version.encode('utf-8')) != catalog.get('contentVersion') or manifest.get('contentVersion') != catalog.get('contentVersion'):
+            raise AtlasError('Material catalog contentVersion differs from its manifest or bundle hashes')
+        self.material_catalog = catalog
+
+    def require_materials(self):
+        if self.materials is None:
+            raise AtlasError('This pinned Atlas version has no content materials library. Keep it for existing commands; use --session SESSION_FILE refresh, a newer --ref, or an updated --local-root to access material commands.')
+
+    def material_bundle(self, material_id):
+        self.require_materials()
+        if material_id not in self.materials:
+            raise AtlasError(f'Unknown material ID: {material_id}')
+        row = self.materials[material_id]
+        data = self.read(row['paths']['bundle'])
+        if digest(data) != row['bundleSha256']:
+            raise AtlasError(f'Material bundle SHA-256 mismatch: {material_id}')
+        bundle = parse_json(data, row['paths']['bundle'])
+        material = bundle.get('material')
+        if bundle.get('schemaVersion') != 1 or bundle.get('id') != material_id or not isinstance(material, dict):
+            raise AtlasError(f'Material bundle identity or schemaVersion mismatch: {material_id}')
+        if any(material.get(key) != value for key, value in row.items() if key not in {'paths', 'bundleSha256'}) or material.get('demo') != row['paths']['demo']:
+            raise AtlasError(f'Material bundle metadata differs from its pinned catalog: {material_id}')
+        validate_bundle_files(bundle, material_id)
+        source_files = bundle.get('sourceFiles')
+        source_paths = {record['path'] for record in bundle['files'] if record['role'] == 'source'}
+        if not isinstance(source_files, list) or not source_files or any(path not in source_paths for path in source_files) or len(set(source_files)) != len(source_files):
+            raise AtlasError(f'Material sourceFiles are absent or invalid in its source manifest: {material_id}')
+        if row['paths']['demo'] not in source_paths:
+            raise AtlasError(f'Material demo is absent from its source manifest: {material_id}')
         return bundle
 
     def load_patterns(self, manifest):
@@ -378,6 +435,27 @@ class Atlas:
         return bundle, cases
 
 
+def validate_bundle_files(bundle, bundle_id):
+    documents = bundle.get('documents')
+    files = bundle.get('files')
+    if not isinstance(documents, list) or not isinstance(files, list):
+        raise AtlasError(f'Bundle documents/files are invalid: {bundle_id}')
+    seen = set()
+    for record in files:
+        path_parts(record.get('path'))
+        key = record['path'].casefold()
+        if key in seen or record['role'] not in ROLES:
+            raise AtlasError(f'Duplicate file path or invalid role: {record["path"]}')
+        seen.add(key)
+        if not HASH.fullmatch(str(record.get('sha256', ''))) or not isinstance(record.get('bytes'), int):
+            raise AtlasError(f'Invalid file integrity metadata: {record["path"]}')
+    for document in documents:
+        path_parts(document.get('path'))
+        if not isinstance(document.get('content'), str):
+            raise AtlasError(f'Document has no full text: {document.get("path")}')
+        verify_data(document['content'].encode('utf-8'), document)
+
+
 def emit(value):
     print(json.dumps(value, ensure_ascii=False, indent=2))
 
@@ -490,6 +568,40 @@ def pattern_show(atlas, args):
     emit(result)
 
 
+def material_search(atlas, args):
+    atlas.require_materials()
+    terms = list(dict.fromkeys(term.casefold() for term in re.split(r'[\s,，;；]+', args.query) if term))
+    fields = ['id', 'title', 'type', 'category', 'tags', 'summary', 'useCases', 'avoid', 'constraints']
+    results = []
+    for material in atlas.materials.values():
+        if args.category and material['category'].casefold() != args.category.casefold():
+            continue
+        if args.type and material['type'].casefold() != args.type.casefold():
+            continue
+        haystacks = {field: json.dumps(material.get(field, ''), ensure_ascii=False).casefold() for field in fields}
+        matches = [{'term': term, 'fields': [field for field in fields if term in haystacks[field]]} for term in terms]
+        matches = [match for match in matches if match['fields']]
+        if terms and not matches:
+            continue
+        score = sum(4 if field in {'id', 'title', 'tags', 'useCases'} else 1 if field in {'avoid', 'constraints'} else 2 for match in matches for field in match['fields'])
+        results.append({**{key: material[key] for key in [*fields, 'paths']}, 'score': score, 'matches': matches})
+    results.sort(key=lambda row: (-row['score'], row['id']))
+    emit({'schemaVersion': 1, 'contentVersion': atlas.catalog['contentVersion'], 'materialContentVersion': atlas.material_catalog['contentVersion'], 'provenance': atlas.provenance(), 'query': args.query, 'filters': {'category': args.category, 'type': args.type}, 'method': 'keyword', 'total': len(results), 'offset': args.offset, 'limit': args.limit, 'hasMore': args.offset + args.limit < len(results), 'results': results[args.offset:args.offset + args.limit]})
+
+
+def material_show(atlas, args):
+    bundle = atlas.material_bundle(args.material_id)
+    result = {**bundle, 'provenance': atlas.provenance()}
+    if args.source:
+        paths = set(bundle['sourceFiles'])
+        result['source'] = read_source(atlas, [record for record in bundle['files'] if record['path'] in paths])
+    emit(result)
+
+
+def material_export(atlas, args):
+    export(atlas, args, kind='material')
+
+
 def pattern_export(atlas, args):
     bundle, cases = atlas.pattern_bundle(args.pattern_id)
     records = merged_files(cases)
@@ -532,8 +644,10 @@ def pattern_export(atlas, args):
     emit({'kind': 'pattern', 'id': args.pattern_id, 'provenance': atlas.provenance(), 'directory': str(out), 'files': len(selected), 'bytes': sum(record['bytes'] for record in selected), 'sourceFiles': metadata['sourceFiles'], 'omitted': metadata['omitted'], 'entrypoints': metadata['entrypoints']})
 
 
-def export(atlas, args):
-    bundle = atlas.bundle(args.case_id)
+def export(atlas, args, kind='case'):
+    bundle_id = args.material_id if kind == 'material' else args.case_id
+    bundle = atlas.material_bundle(bundle_id) if kind == 'material' else atlas.bundle(bundle_id)
+    row = atlas.materials[bundle_id] if kind == 'material' else atlas.entries[bundle_id]
     out = Path(args.out).absolute()
     no_symlinks(out)
     if out.exists():
@@ -553,20 +667,25 @@ def export(atlas, args):
             with target.open("xb") as handle:
                 handle.write(data)
         metadata = {
-            "schemaVersion": 1, "id": args.case_id, "provenance": atlas.provenance(),
-            "paths": atlas.entries[args.case_id]["paths"],
+            "schemaVersion": 1, "id": bundle_id, "provenance": atlas.provenance(),
+            "paths": row["paths"],
             "codeOnly": args.code_only, "files": selected,
             "omitted": [r["path"] for r in bundle["files"] if r not in selected],
             "filesNotDownloaded": [{**r, "url": atlas.url(r["path"]) if not atlas.local else None} for r in bundle["files"] if r not in selected],
             "bundle": bundle,
         }
+        if kind == 'material':
+            metadata.update({'kind': kind, 'materialContentVersion': atlas.material_catalog['contentVersion'], 'sourceFiles': bundle['sourceFiles']})
         with (out / "atlas-export.json").open("x", encoding="utf-8", newline="\n") as handle:
             json.dump(metadata, handle, ensure_ascii=False, indent=2)
             handle.write("\n")
     except Exception:
         shutil.rmtree(out)
         raise
-    emit({"id": args.case_id, "provenance": atlas.provenance(), "directory": str(out), "files": len(selected), "bytes": sum(r['bytes'] for r in selected), "omitted": metadata['omitted'], "entrypoint": metadata["paths"]["demo"]})
+    result = {"id": bundle_id, "provenance": atlas.provenance(), "directory": str(out), "files": len(selected), "bytes": sum(r['bytes'] for r in selected), "omitted": metadata['omitted'], "entrypoint": metadata["paths"]["demo"]}
+    if kind == 'material':
+        result['kind'] = kind
+    emit(result)
 
 
 def main():
@@ -601,6 +720,19 @@ def main():
     pattern_save.add_argument('pattern_id')
     pattern_save.add_argument('--out', required=True)
     pattern_save.add_argument('--code-only', action='store_true', help='Download source/context and explicitly list omitted media')
+    material_find = commands.add_parser('material-search', help='Search content resources and their runnable examples')
+    material_find.add_argument('query', nargs='?', default='')
+    material_find.add_argument('--category', help='Exact material category filter')
+    material_find.add_argument('--type', help='Exact resource type filter, such as component-library or font')
+    material_find.add_argument('--limit', type=int, default=5)
+    material_find.add_argument('--offset', type=int, default=0, help='Skip this many ranked materials; continue until hasMore is false')
+    material_detail = commands.add_parser('material-show', help='Read a complete resource bundle and optionally full example source')
+    material_detail.add_argument('material_id')
+    material_detail.add_argument('--source', action='store_true')
+    material_save = commands.add_parser('material-export', help='Download and hash-verify a resource and its runnable examples')
+    material_save.add_argument('material_id')
+    material_save.add_argument('--out', required=True)
+    material_save.add_argument('--code-only', action='store_true', help='Download source/context and explicitly list omitted media')
     info = commands.add_parser("info", help="Verify the catalog and report the active upstream version")
     commands.add_parser("refresh", help="Resolve the latest default-branch commit and atomically refresh --session")
     args = parser.parse_args()
@@ -626,8 +758,14 @@ def main():
             pattern_show(atlas, args)
         elif args.command == 'pattern-export':
             pattern_export(atlas, args)
+        elif args.command == 'material-search':
+            material_search(atlas, args)
+        elif args.command == 'material-show':
+            material_show(atlas, args)
+        elif args.command == 'material-export':
+            material_export(atlas, args)
         else:
-            result = {"provenance": atlas.provenance(), "entryCount": len(atlas.entries), 'patternCount': len(atlas.patterns) if atlas.patterns is not None else None}
+            result = {"provenance": atlas.provenance(), "entryCount": len(atlas.entries), 'patternCount': len(atlas.patterns) if atlas.patterns is not None else None, 'materialCount': len(atlas.materials) if atlas.materials is not None else None}
             if args.command == 'refresh':
                 result.update({'previousRef': atlas.previous_ref, 'refChanged': atlas.previous_ref != atlas.ref})
             emit(result)
