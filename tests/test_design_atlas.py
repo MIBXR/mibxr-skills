@@ -57,6 +57,44 @@ def make_version(ref, ids):
     return files
 
 
+def add_materials(files, ref, ids):
+    materials = []
+    for material_id in ids:
+        source_path = 'material-demos/' + material_id + '/index.html'
+        context_path = 'materials/' + material_id + '.json'
+        asset_path = 'material-demos/' + material_id + '/preview.png'
+        material = {
+            'id': material_id, 'title': material_id, 'type': 'component-library',
+            'category': '组件与效果', 'tags': ['shader'], 'summary': '交互背景资源',
+            'useCases': ['品牌页'], 'avoid': ['高密度正文'], 'constraints': ['减少动态'],
+            'demo': source_path, 'demos': [{'id': 'wave', 'title': '波浪', 'summary': '调节强度', 'entrypoint': source_path}],
+            'upstream': {'repository': 'example/resource', 'commit': ref}, 'license': {'name': 'MIT'},
+        }
+        files[source_path] = ('<h1>shader ' + ref + '</h1>\n').encode('utf-8')
+        files[context_path] = encode(material)
+        files[asset_path] = b'preview'
+        records = [{'path': path, 'role': role, 'bytes': len(files[path]), 'sha256': digest(files[path])} for path, role in [(source_path, 'source'), (context_path, 'context'), (asset_path, 'preview')]]
+        bundle_path = 'agent/materials/' + material_id + '.json'
+        files[bundle_path] = encode({
+            'schemaVersion': 1, 'id': material_id, 'material': material,
+            'documents': [{'path': context_path, 'role': 'material', 'content': files[context_path].decode('utf-8'), 'bytes': len(files[context_path]), 'sha256': digest(files[context_path])}],
+            'files': records, 'sourceFiles': [source_path],
+            'webNotes': {'format': 'text/html', 'content': '<section>素材 ' + ref + '</section>'},
+        })
+        summary = {key: material[key] for key in ['id', 'title', 'type', 'category', 'summary', 'tags', 'useCases', 'avoid', 'constraints']}
+        materials.append({**summary, 'paths': {'bundle': bundle_path, 'demo': source_path, 'entry': context_path, 'preview': asset_path}, 'bundleSha256': digest(files[bundle_path])})
+    material_version = digest(''.join(row['id'] + ':' + row['bundleSha256'] + '\n' for row in sorted(materials, key=lambda row: row['id'])).encode('utf-8'))
+    files['agent/materials.json'] = encode({'schemaVersion': 1, 'repository': REPOSITORY, 'materialCount': len(materials), 'contentVersion': material_version, 'materials': materials})
+    catalog = json.loads(files['agent/catalog.json'])
+    catalog['materials'] = {'path': 'agent/materials.json', 'materialCount': len(materials), 'contentVersion': material_version, 'bytes': len(files['agent/materials.json']), 'sha256': digest(files['agent/materials.json'])}
+    version = ''.join(row['id'] + ':' + row['bundleSha256'] + '\n' for row in sorted(catalog['entries'], key=lambda row: row['id']))
+    if 'patterns' in catalog:
+        version += 'patterns:' + catalog['patterns']['contentVersion'] + '\n'
+    catalog['contentVersion'] = digest((version + 'materials:' + material_version + '\n').encode('utf-8'))
+    files['agent/catalog.json'] = encode(catalog)
+    return files
+
+
 def args(session=None, command='search', ref=None):
     return argparse.Namespace(ref=ref, local_root=None, session=str(session) if session else None, command=command)
 
@@ -216,6 +254,92 @@ class DesignAtlasTests(unittest.TestCase):
         with self.assertRaisesRegex(atlas.AtlasError, 'outside the installed skill'):
             atlas.Atlas(args(forbidden))
         self.assertFalse(forbidden.exists())
+
+    def test_material_search_filters_and_paginates_the_complete_directory(self):
+        self.versions[REF_C] = add_materials(make_version(REF_C, ['old-style']), REF_C, ['material-' + str(index).zfill(3) for index in range(105)])
+        self.latest = REF_C
+        catalog = atlas.Atlas(args(self.session, 'material-search'))
+        pages = [capture_json(lambda offset=offset: atlas.material_search(catalog, argparse.Namespace(query='shader', category='组件与效果', type='component-library', limit=100, offset=offset))) for offset in [0, 100]]
+        self.assertEqual(pages[0]['total'], 105)
+        self.assertEqual([len(page['results']) for page in pages], [100, 5])
+        self.assertEqual([page['hasMore'] for page in pages], [True, False])
+        self.assertEqual(len({row['id'] for page in pages for row in page['results']}), 105)
+        self.assertEqual(pages[0]['results'][0]['matches'][0]['fields'], ['tags'])
+        filtered = capture_json(lambda: atlas.material_search(catalog, argparse.Namespace(query='', category=None, type='font', limit=5, offset=0)))
+        self.assertEqual(filtered['total'], 0)
+
+    def test_material_session_refresh_source_and_exports_share_a_verified_version(self):
+        self.versions[REF_A] = add_materials(self.versions[REF_A], REF_A, ['shaders'])
+        self.versions[REF_B] = add_materials(make_version(REF_A, ['old-style']), REF_B, ['shaders', 'new-resource'])
+        first = atlas.Atlas(args(self.session, 'material-show'))
+        self.latest = REF_B
+        pinned = atlas.Atlas(args(self.session, 'material-show'))
+        self.assertEqual(pinned.ref, REF_A)
+        self.assertEqual(pinned.material_catalog['contentVersion'], first.material_catalog['contentVersion'])
+        shown = capture_json(lambda: atlas.material_show(pinned, argparse.Namespace(material_id='shaders', source=True)))
+        self.assertEqual(shown['material']['upstream']['commit'], REF_A)
+        self.assertTrue(shown['source'][0]['content'].endswith(REF_A + '</h1>\n'))
+        self.assertTrue(shown['documents'][0]['content'])
+        self.assertTrue(shown['webNotes']['content'])
+        for code_only in [False, True]:
+            out = self.scratch / ('material-code' if code_only else 'material-full')
+            result = capture_json(lambda: atlas.material_export(pinned, argparse.Namespace(material_id='shaders', out=str(out), code_only=code_only)))
+            metadata = json.loads((out / 'atlas-export.json').read_text(encoding='utf-8'))
+            self.assertEqual(metadata['bundle'], {key: value for key, value in shown.items() if key not in {'source', 'provenance'}})
+            self.assertEqual(metadata['provenance']['ref'], REF_A)
+            self.assertTrue((out / result['entrypoint']).exists())
+            self.assertEqual(len(metadata['omitted']), 1 if code_only else 0)
+            for record in metadata['files']:
+                data = (out / record['path']).read_bytes()
+                self.assertEqual(digest(data), record['sha256'])
+                self.assertEqual(len(data), record['bytes'])
+        refreshed = atlas.Atlas(args(self.session, 'refresh'))
+        self.assertEqual(refreshed.ref, REF_B)
+        self.assertIn('new-resource', refreshed.materials)
+        self.assertEqual(refreshed.entries['old-style']['bundleSha256'], pinned.entries['old-style']['bundleSha256'])
+        self.assertNotEqual(refreshed.catalog['contentVersion'], pinned.catalog['contentVersion'])
+
+    def test_material_digest_failure_preserves_the_session_and_source_failure_cleans_export(self):
+        self.versions[REF_A] = add_materials(self.versions[REF_A], REF_A, ['shaders'])
+        catalog = atlas.Atlas(args(self.session, 'material-show'))
+        state = self.session.read_bytes()
+        self.versions[REF_B] = add_materials(self.versions[REF_B], REF_B, ['shaders'])
+        self.latest = REF_B
+        valid_materials = self.versions[REF_B]['agent/materials.json']
+        self.versions[REF_B]['agent/materials.json'] += b' '
+        with self.assertRaisesRegex(atlas.AtlasError, 'Byte length mismatch'):
+            atlas.Atlas(args(self.session, 'refresh'))
+        self.assertEqual(self.session.read_bytes(), state)
+        material_index = json.loads(valid_materials)
+        material_index['materials'][0]['bundleSha256'] = '0' * 64
+        self.versions[REF_B]['agent/materials.json'] = encode(material_index)
+        main_index = json.loads(self.versions[REF_B]['agent/catalog.json'])
+        main_index['materials'].update({'bytes': len(self.versions[REF_B]['agent/materials.json']), 'sha256': digest(self.versions[REF_B]['agent/materials.json'])})
+        self.versions[REF_B]['agent/catalog.json'] = encode(main_index)
+        with self.assertRaisesRegex(atlas.AtlasError, 'Material catalog contentVersion differs'):
+            atlas.Atlas(args(self.session, 'refresh'))
+        self.assertEqual(self.session.read_bytes(), state)
+        path = catalog.materials['shaders']['paths']['demo']
+        self.versions[REF_A][path] += b'changed'
+        with self.assertRaisesRegex(atlas.AtlasError, 'Byte length mismatch'):
+            atlas.material_show(catalog, argparse.Namespace(material_id='shaders', source=True))
+        out = self.scratch / 'failed-material'
+        with self.assertRaisesRegex(atlas.AtlasError, 'Byte length mismatch'):
+            atlas.material_export(catalog, argparse.Namespace(material_id='shaders', out=str(out), code_only=False))
+        self.assertFalse(out.exists())
+
+    def test_material_bundle_digest_is_checked_and_older_case_sessions_keep_working(self):
+        old = atlas.Atlas(args(self.session))
+        self.assertIsNone(old.materials)
+        self.assertEqual(old.bundle('old-style')['id'], 'old-style')
+        with self.assertRaisesRegex(atlas.AtlasError, 'no content materials library'):
+            atlas.Atlas(args(self.session, 'material-search'))
+        self.versions[REF_B] = add_materials(self.versions[REF_B], REF_B, ['shaders'])
+        self.latest = REF_B
+        new = atlas.Atlas(args(self.session, 'refresh'))
+        self.versions[REF_B]['agent/materials/shaders.json'] += b' '
+        with self.assertRaisesRegex(atlas.AtlasError, 'Material bundle SHA-256 mismatch'):
+            new.material_bundle('shaders')
 
 
 if __name__ == '__main__':

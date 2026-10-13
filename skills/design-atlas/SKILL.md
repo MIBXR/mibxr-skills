@@ -1,11 +1,11 @@
 ---
 name: design-atlas
-description: 从 Design Atlas 选择前端案例及视觉、微动效、页面动效、声音与内容组织巧思，自动取得源码、提示词和来源上下文来实现网站。用于选择风格、借鉴独立机制、跨案例组合或按指定案例构建页面；网站案例库维护使用其仓库说明。
+description: 从 Design Atlas 选择前端案例、设计巧思及组件、图片、声音、字体等内容素材，自动取得示例源码、提示词和来源上下文来实现网站。用于选择风格、组合机制、取用素材或按指定参考构建页面；库维护使用其仓库说明。
 ---
 
 # Design Atlas 前端设计参考
 
-从完整案例选择视觉方向，从设计巧思选择可独立借用的机制，再结合当前产品实现网站。一个页面可以组合多个案例的巧思。案例、巧思及其来源由 [MIBXR/design-atlas](https://github.com/MIBXR/design-atlas) 维护；本技能保存工作流与轻量检索工具，网站保留人类预览。用户无需预先知道 ID，也无需手动复制源码或 Prompt。
+从完整案例选择视觉方向，从设计巧思选择可独立借用的机制，从内容素材选择可用于产品的资源，再结合当前产品实现网站。一个页面可以组合多个案例的巧思与素材。案例、巧思、素材及其来源由 [MIBXR/design-atlas](https://github.com/MIBXR/design-atlas) 维护；本技能保存工作流与轻量检索工具，网站保留人类预览和交互样例。用户无需预先知道 ID，也无需手动复制源码或 Prompt。
 
 ## 通用界面约束
 
@@ -16,7 +16,7 @@ description: 从 Design Atlas 选择前端案例及视觉、微动效、页面�
 
 ## 建立本次取材会话
 
-使用 `scripts/atlas.py`（Python 3，仅标准库）。新会话先读取上游仓库的默认分支及最新完整 Git SHA；案例与巧思共享这次会话的 SHA，后续探索、筛选、取材和导出保持一致。
+使用 `scripts/atlas.py`（Python 3，仅标准库）。新会话先读取上游仓库的默认分支及最新完整 Git SHA；案例、巧思与素材共享这次会话的 SHA，后续探索、筛选、取材和导出保持一致。
 
 远程取材时，在用户当前项目的 `work/` 中选一个会话 JSON 路径，每次调用都传给 `--session`。脚本不向技能安装目录写状态。离线的 `--local-root CHECKOUT` 读取当前工作树，不能与 `--session` 或 `--ref` 同用；复现时保存该工作树及输出的 `contentVersion`，后续调用会读取新落盘的内容。下例中的 `ATLAS_SCRIPT` 是技能脚本的实际路径，`SESSION_FILE` 是本次用户工作目录中的 JSON 路径；命令输出 UTF-8 JSON，所有全局参数放在子命令前。
 
@@ -36,19 +36,25 @@ python ATLAS_SCRIPT --session SESSION_FILE pattern-search "" --type sound
 python ATLAS_SCRIPT --session SESSION_FILE pattern-search "" --category "交互反馈" --case chatgpt-platform
 python ATLAS_SCRIPT --session SESSION_FILE pattern-show PATTERN_ID --source
 python ATLAS_SCRIPT --session SESSION_FILE pattern-export PATTERN_ID --out NEW_DIRECTORY
+python ATLAS_SCRIPT --session SESSION_FILE material-search "" --limit 100 --offset 0
+python ATLAS_SCRIPT --session SESSION_FILE material-search "shader 背景" --limit 5
+python ATLAS_SCRIPT --session SESSION_FILE material-search "" --type component-library
+python ATLAS_SCRIPT --session SESSION_FILE material-search "" --category "组件与效果"
+python ATLAS_SCRIPT --session SESSION_FILE material-show MATERIAL_ID --source
+python ATLAS_SCRIPT --session SESSION_FILE material-export MATERIAL_ID --out NEW_DIRECTORY
 ```
 
-按当前任务选择 `search`（完整案例）或 `pattern-search`（独立巧思），空查询读取目录。若 `hasMore` 为 `true`，保持同一会话、查询与过滤，把 `--offset` 增加本次 `limit` 继续读取，直到 `hasMore` 为 `false`；单页上限为 100，两个目录的总量均不限。查询支持中文和英文关键词，输出命中字段、适用场景与谨慎使用项；分数用于排序，适合程度结合真实需求判断。巧思可按单个 `--type` 体验类型、`--category` 功能分类、`--case` 来源案例共同过滤；`experienceTypes` 可含多个类型，命中其中一个即符合类型过滤。
+按当前任务选择 `search`（完整案例）、`pattern-search`（独立巧思）或 `material-search`（内容素材），空查询读取目录。若 `hasMore` 为 `true`，保持同一会话、查询与过滤，把 `--offset` 增加本次 `limit` 继续读取，直到 `hasMore` 为 `false`；单页上限为 100，目录总量不限。查询支持中文和英文关键词，输出命中字段、适用场景与谨慎使用项；分数用于排序，适合程度结合真实需求判断。巧思可按单个 `--type` 体验类型、`--category` 功能分类、`--case` 来源案例共同过滤；`experienceTypes` 可含多个类型，命中其中一个即符合类型过滤。素材按其 `type`（如 `component-library`）与功能分类过滤，类型由目录中的实际标注决定。
 
 体验类型由上游逐项标注：`visual` 是排版、色彩、装饰和形状等静态视觉机制；`micro-motion` 是按钮、卡片等局部反馈或辅助动效；`page-motion` 是首屏、滚动叙事、页面过渡等主体动效；`sound` 是背景音乐和操作音；`structure` 是内容组织、导航和信息关系。按当前产品的问题筛选，不要求每个案例具备全部类型，也不为凑类型拆分机制。声音适用于游戏、品牌叙事等确有听觉需求的场景，结合声音巧思包的来源观察与核验边界选择。
 
-需要取得后来新增的案例或巧思时，显式刷新会话后重新检索：
+需要取得后来新增的案例、巧思或素材时，显式刷新会话后重新检索：
 
 ```bash
 python ATLAS_SCRIPT --session SESSION_FILE refresh
 ```
 
-刷新先验证案例索引、巧思索引的仓库、schema、清单与摘要，再原子替换会话；失败保留原会话。无需会话的 `info` 查看当前最新版本及两个目录的数量。默认解析失败会明确报错；已有会话、`--ref FULL_COMMIT` 复现模式及 `--local-root CHECKOUT` 离线模式各自可用。后两种模式的全局参数也放在子命令前。旧版本仍支持案例命令；缺少巧思目录或体验类型时工具提示刷新或选择新版。无类型标注的旧巧思仍可读取、导出和不带 `--type` 检索，检索输出中的空 `experienceTypes` 表示未分类。`upstream.lock.json` 保存上游配置和已验证基线，基线不限制默认发现新增内容。
+刷新先验证已有案例、巧思和素材索引的仓库、schema、清单与摘要，再原子替换会话；失败保留原会话。无需会话的 `info` 查看当前最新版本及各目录的数量。默认解析失败会明确报错；已有会话、`--ref FULL_COMMIT` 复现模式及 `--local-root CHECKOUT` 离线模式各自可用。后两种模式的全局参数也放在子命令前。旧版本仍支持已有命令；缺少巧思或素材目录、体验类型时工具提示刷新或选择新版。无类型标注的旧巧思仍可读取、导出和不带 `--type` 检索，检索输出中的空 `experienceTypes` 表示未分类。`upstream.lock.json` 保存上游配置和已验证基线，基线不限制默认发现新增内容。
 
 ## 探索并迭代筛选
 
@@ -56,17 +62,19 @@ python ATLAS_SCRIPT --session SESSION_FILE refresh
 
 扩展已有产品时，先查看同类页面与详情页的实际渲染、复用组件、设计 Tokens、响应式断点和交互模式，将现有风格与用户确认的约束作为实现基准。
 
-根据真实需求比较少量候选，说明能借用的机制与适配代价，围绕内容、功能和反馈收敛到足以解释当前产品的方向。需求变化时保留已知约束，重新筛选。用户已经指定案例或巧思时直接读取；已授权构建且需求、选择依据明确时，自主继续完整取材与实现。
+根据真实需求比较少量候选，说明能借用的机制与适配代价，围绕内容、功能和反馈收敛到足以解释当前产品的方向。需求变化时保留已知约束，重新筛选。用户已经指定案例、巧思或素材时直接读取；已授权构建且需求、选择依据明确时，自主继续完整取材与实现。
 
 新建产品时，确定主视觉与信息层级由哪个案例或 `composition.role=foundation` 的巧思承担；扩展已有产品时，沿用已确认的视觉与信息层级。再为 `support` 和 `accent` 指定组件或交互职责。以目标页面的问题选择跨案例机制，参考 `pairsWellWith`、`conflicts` 与 `composition.notes`，逐项检查触发事件、动态强度、注意力竞争和布局是否冲突；这些关系是设计建议，仍需结合当前内容验证。明确触发与效果、参数、键盘行为及减少动态后的状态，避免把多个案例的全屏加载、背景运动和滚动接管同时堆在一个流程。
 
 候选摘要只用于选择。实现前对最终案例执行 `show --source`，对最终巧思执行 `pattern-show PATTERN_ID --source`。巧思包包含完整机制、Prompt、参数、来源观察与证据等级，以及核验后的 `sourceCaseBundles`；`source` 自动读取 `sourceFiles` 中的实际源码。形成包含案例／巧思 ID、上游 commit、职责与适配方式的短设计依据。`sources[].evidence` 区分实站观察 `observed`、教学改编 `adapted` 与推导 `inferred`；通过来源案例理解机制在完整页面中的效果，按原有证据等级表述。
 
-同时读取 `webNotes.content`：它保留同一版本 `atlas.js` 实际渲染的详情右侧说明 HTML，覆盖设计机制、交互、约束、Tokens、Prompt 和来源证据。把网页说明与完整字段、文档对照后取材，保留采集／理论核验日期、近似和未验证标记。发生差异时先检查是否混用了网页与数据版本，再取得同一 SHA 的材料；仍有差异时列出具体字段与说明，按本次任务修复或报告。
+素材取材先执行 `material-show MATERIAL_ID --source`，读取完整资源信息、交互示例、接入方法、许可、来源版本与限制。样例是从资源中选择的代表用法，覆盖范围以素材包中的说明为准；更完整的组件、参数和资产通过其上游链接查阅。按当前技术栈判断示例中的依赖和集成成本，保留许可要求与第三方署名；区分资源本身的能力、样例实际验证的行为和为当前页面做的适配。
+
+案例取材同时读取 `webNotes.content`：它保留同一版本 `atlas.js` 实际渲染的详情右侧说明 HTML，覆盖设计机制、交互、约束、Tokens、Prompt 和来源证据。素材包提供 `webNotes` 时同样与完整字段、文档对照，保留采集／理论核验日期、近似和未验证标记。发生差异时先检查是否混用了网页与数据版本，再取得同一 SHA 的材料；仍有差异时列出具体字段与说明，按本次任务修复或报告。
 
 ## 取得完整材料并实现
 
-需要可运行参考时执行 `export` 或 `pattern-export`，保留仓库相对目录并核验全部文件。目标目录必须尚不存在。巧思导出自动取得相关案例的完整 demo、素材和上下文，`atlas-export.json` 保留巧思包、`sourceFiles`、来源案例包、文件摘要与上游版本；以原子机制的职责取材，完整 demo 用于理解页面关系。两种导出均支持 `--code-only` 仅下载源码与上下文，并列明未下载素材及预览。完整预览媒体按清单补齐，用静态 HTTP 服务器服务导出根目录，打开案例输出的 `entrypoint` 或巧思输出的 `entrypoints[].path`。
+需要可运行参考时执行 `export`、`pattern-export` 或 `material-export`，保留仓库相对目录并核验全部文件。目标目录必须尚不存在。巧思导出自动取得相关案例的完整 demo、素材和上下文，`atlas-export.json` 保留巧思包、`sourceFiles`、来源案例包、文件摘要与上游版本；以原子机制的职责取材，完整 demo 用于理解页面关系。素材导出保留资源包、样例源码和许可上下文，目录中的实际文件由清单决定。各导出均支持 `--code-only` 仅下载源码与上下文，并列明未下载素材及预览。完整预览媒体按清单补齐，用静态 HTTP 服务器服务导出根目录，打开输出的 `entrypoint` 或 `entrypoints[].path`。
 
 从案例提取信息层级、布局节奏、色彩、字体、组件状态、交互和响应式行为，将跨案例机制适配到同一套视觉与交互系统。兄弟页面复用已有组件与布局约定，差异由各自的功能需要决定。保留项目结构与用户确认的约束，按当前真实内容与功能实现所需模块。案例中的品牌、占位内容、外部素材和模拟行为各有来源，按当前产品替换或核实。
 
@@ -80,4 +88,4 @@ python ATLAS_SCRIPT --session SESSION_FILE refresh
 
 扩展已有产品时，在相同桌面与窄屏视口宽度下，对照兄弟页面检查网格列数、卡片结构、字体层级、标签、悬停与焦点状态、导航和详情页模式；确认一致性及用户约束落实后交付，保留的差异应有具体功能依据。
 
-交付时列明引用的案例／巧思 ID、上游版本、组合职责、完成的适配和实际验证结果。[Agent 协议说明](https://github.com/MIBXR/design-atlas/blob/master/AGENT.md) 与 `agent/catalog.json`、`agent/cases/<id>.json`、`agent/patterns.json`、`agent/patterns/<id>.json` 提供直接读取入口；当前项目的运行结果决定交付是否完成。
+交付时列明引用的案例／巧思／素材 ID、上游版本、组合职责、完成的适配和实际验证结果。[Agent 协议说明](https://github.com/MIBXR/design-atlas/blob/master/AGENT.md) 与 `agent/catalog.json`、`agent/cases/<id>.json`、`agent/patterns.json`、`agent/patterns/<id>.json`、`agent/materials.json`、`agent/materials/<id>.json` 提供直接读取入口；当前项目的运行结果决定交付是否完成。
