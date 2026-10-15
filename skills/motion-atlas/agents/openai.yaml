@@ -1,0 +1,4 @@
+interface:
+  display_name: "Motion Atlas 动态视觉参考"
+  short_description: "探索动态视频、交互操作台与展示台的案例和动效巧思，取得节拍表、Prompt 与可逐帧渲染的 Demo 源码"
+  default_prompt: "请使用 $motion-atlas 探索动态设计案例与动效巧思，围绕当前内容选择时间结构、视觉语言与交互反馈，自动取得节拍表、Prompt 与 Demo 源码，实现并验证作品。"

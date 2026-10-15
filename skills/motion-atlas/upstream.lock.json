@@ -1,0 +1,7 @@
+{
+  "repository": "MIBXR/motion-atlas",
+  "default": "latest-default-branch",
+  "baselineRef": "e89d03fbc8bf85a9a1eab0b0d1515a0546105692",
+  "catalog": "agent/catalog.json",
+  "schemaVersion": 1
+}

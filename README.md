@@ -1,6 +1,6 @@
 # MIBXR Skills
 
-把桌宠制作与前端设计参考的工作方法，整理成换一台电脑也能继续使用的 Agent 技能。
+把桌宠制作、前端设计参考与动态视觉参考的工作方法，整理成换一台电脑也能继续使用的 Agent 技能。
 
 ## 前端设计参考 Skill
 
@@ -16,7 +16,7 @@
 
 `material-search` 支持关键词、资源类型（如 `--type component-library`）、分类和完整分页。`material-show --source` 返回资源接入方式、许可、来源版本、交互样例与摘要校验后的源码；`material-export` 导出清单中的样例、依赖和上下文，支持 `--code-only` 并列明未下载媒体。素材与案例、巧思共享会话版本；缺少素材目录的旧版本仍可使用已有命令，素材命令提示显式刷新。素材包中的样例展示代表用法，完整资源继续通过上游仓库查阅。
 
-在仓库根目录运行 `python -m unittest discover -s tests -v` 可执行标准库行为测试；测试无需联网，安装技能时无需携带 `tests/`。
+在仓库根目录运行 `python -m unittest discover -s tests -v` 可执行全部技能的标准库行为测试；测试无需联网，安装技能时无需携带 `tests/`。
 
 ```text
 请使用 $skill-installer，从 MIBXR/mibxr-skills 的 main 分支安装
@@ -31,6 +31,30 @@ $design-atlas 对比两种适合个人作品集的风格，说明选择依据并
 $design-atlas 为我的产品页挑选首屏聚焦与加载反馈的巧思，跨案例组合，说明各自职责、冲突和减少动态后的行为，再实现。
 $design-atlas 为我的产品页分别挑选静态视觉和按钮微动效，保留页面叙事节奏；只在内容需要时加入页面动效或声音。
 $design-atlas 从素材库读取 shaders 的可交互样例、许可与源码，为我的品牌页选择一种背景效果，沿用现有布局并验证减少动态后的状态。
+```
+
+## 动态视觉参考 Skill
+
+`$motion-atlas` 把 [Motion Atlas](https://github.com/MIBXR/motion-atlas) 接入动态视频、交互操作台与交互展示台的制作：从完整案例选择时间结构与视觉语言，从动效巧思挑选转场、反馈、HUD、文字动效等可独立借用的机制，再自动读取节拍表、动效 Token、实现与视频生成 Prompt、研究笔记和 Demo 源码。用户无需先知道 ID。
+
+本仓库只保存工作流、检索脚本与上游配置。案例、巧思、Prompt、Demo、预览与研究笔记由 `MIBXR/motion-atlas` 维护。
+
+[阅读技能正文](skills/motion-atlas/SKILL.md)。检索脚本使用 Python 标准库，与 `$design-atlas` 相同：新会话从上游默认分支解析最新 Git SHA，同一任务通过用户工作目录中的 `--session` 固定版本，`refresh` 显式更新，`--ref` 复现指定版本，`--local-root` 离线读取；目录、资料包与每个文件按 SHA-256 校验。
+
+`search` 按关键词、载体（`--carrier video / console / showcase`）、证据等级（`--evidence`）、来源（`--origin`）与是否可逐帧渲染（`--seekable`）筛选案例；`pattern-search` 按巧思类型（`--type`，如 `transition`、`rhythm`、`feedback`、`hud`）、载体、组合职责（`--role foundation / support / accent`）与来源案例过滤，均支持完整分页。`show --source` 与 `pattern-show --source` 返回完整条目、Prompt 文档、研究笔记与校验后的源码；`export` 与 `pattern-export` 导出可运行 Demo、Prompt 与研究笔记，`--code-only` 跳过预览图。逐帧渲染成视频与参考视频取帧使用上游仓库的 Node 脚本，技能正文说明了用法。
+
+```text
+请使用 $skill-installer，从 MIBXR/mibxr-skills 的 main 分支安装
+skills/motion-atlas。
+如果已经安装同名技能，先保留本地修改，再更新。
+```
+
+```text
+$motion-atlas 用我拍的城市旅行素材做一支 60 秒游戏过场风格的视频，地图串起每个地点，先给节拍表让我确认。
+$motion-atlas 为我的数据监控后台设计操作台交互：选中、锁定、告警的反馈与空闲状态，说明每个巧思的职责和冲突。
+$motion-atlas 把这首歌的歌词做成 30 秒节拍字幕 MV，BPM 用我给的数值，渲染成 MP4。
+$motion-atlas 参考 gacha-reveal 的期待与释放节奏，为新品发布页做一个揭示展示台，保留减少动态后的状态。
+$motion-atlas 只给我视频生成 Prompt：新品发布倒计时，24 秒，转播包风格，附负向约束。
 ```
 
 ## 桌宠制作与交付 Skill
