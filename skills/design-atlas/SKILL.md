@@ -18,7 +18,7 @@ description: 从 Design Atlas 选择前端案例、设计巧思及组件、图�
 
 使用 `scripts/atlas.py`（Python 3，仅标准库）。新会话先读取上游仓库的默认分支及最新完整 Git SHA；案例、巧思与素材共享这次会话的 SHA，后续探索、筛选、取材和导出保持一致。
 
-远程取材时，在用户当前项目的 `work/` 中选一个会话 JSON 路径，每次调用都传给 `--session`。脚本不向技能安装目录写状态。离线的 `--local-root CHECKOUT` 读取当前工作树，不能与 `--session` 或 `--ref` 同用；复现时保存该工作树及输出的 `contentVersion`，后续调用会读取新落盘的内容。下例中的 `ATLAS_SCRIPT` 是技能脚本的实际路径，`SESSION_FILE` 是本次用户工作目录中的 JSON 路径；命令输出 UTF-8 JSON，所有全局参数放在子命令前。
+远程取材时，在用户当前项目的 `work/` 中选一个会话 JSON 路径，每次调用都传给 `--session`。脚本不向技能安装目录写状态。离线的 `--local-root CHECKOUT` 读取当前工作树，不能与 `--session` 或 `--ref` 同用；需要复现时使用已提交的版本。下例中的 `ATLAS_SCRIPT` 是技能脚本的实际路径，`SESSION_FILE` 是本次用户工作目录中的 JSON 路径；命令输出 UTF-8 JSON，所有全局参数放在子命令前。
 
 ```bash
 python ATLAS_SCRIPT --session SESSION_FILE search "" --limit 100 --offset 0
@@ -54,7 +54,7 @@ python ATLAS_SCRIPT --session SESSION_FILE material-export MATERIAL_ID --out NEW
 python ATLAS_SCRIPT --session SESSION_FILE refresh
 ```
 
-刷新先验证已有案例、巧思和素材索引的仓库、schema、清单与摘要，再原子替换会话；失败保留原会话。无需会话的 `info` 查看当前最新版本及各目录的数量。默认解析失败会明确报错；已有会话、`--ref FULL_COMMIT` 复现模式及 `--local-root CHECKOUT` 离线模式各自可用。后两种模式的全局参数也放在子命令前。旧版本仍支持已有命令；缺少巧思或素材目录、体验类型时工具提示刷新或选择新版。无类型标注的旧巧思仍可读取、导出和不带 `--type` 检索，检索输出中的空 `experienceTypes` 表示未分类。`upstream.lock.json` 保存上游配置和已验证基线，基线不限制默认发现新增内容。
+刷新解析默认分支的新 Git 提交，读取该版本的案例目录后替换会话；失败保留原会话。各命令只读取对应目录和实际取用的内容，巧思取材同时读取其来源案例。无需会话的 `info` 查看当前最新版本及各目录的数量。默认解析失败会明确报错；已有会话、`--ref FULL_COMMIT` 复现模式及 `--local-root CHECKOUT` 离线模式各自可用。后两种模式的全局参数也放在子命令前。旧版本仍支持已有命令；缺少巧思或素材目录、体验类型时工具提示刷新或选择新版。无类型标注的旧巧思仍可读取、导出和不带 `--type` 检索，检索输出中的空 `experienceTypes` 表示未分类。`upstream.lock.json` 保存上游配置和已验证基线，基线不限制默认发现新增内容。
 
 ## 探索并迭代筛选
 
@@ -66,7 +66,7 @@ python ATLAS_SCRIPT --session SESSION_FILE refresh
 
 新建产品时，确定主视觉与信息层级由哪个案例或 `composition.role=foundation` 的巧思承担；扩展已有产品时，沿用已确认的视觉与信息层级。再为 `support` 和 `accent` 指定组件或交互职责。以目标页面的问题选择跨案例机制，参考 `pairsWellWith`、`conflicts` 与 `composition.notes`，逐项检查触发事件、动态强度、注意力竞争和布局是否冲突；这些关系是设计建议，仍需结合当前内容验证。明确触发与效果、参数、键盘行为及减少动态后的状态，避免把多个案例的全屏加载、背景运动和滚动接管同时堆在一个流程。
 
-候选摘要只用于选择。实现前对最终案例执行 `show --source`，对最终巧思执行 `pattern-show PATTERN_ID --source`。巧思包包含完整机制、Prompt、参数、来源观察与证据等级，以及核验后的 `sourceCaseBundles`；`source` 自动读取 `sourceFiles` 中的实际源码。形成包含案例／巧思 ID、上游 commit、职责与适配方式的短设计依据。`sources[].evidence` 区分实站观察 `observed`、教学改编 `adapted` 与推导 `inferred`；通过来源案例理解机制在完整页面中的效果，按原有证据等级表述。
+候选摘要只用于选择。实现前对最终案例执行 `show --source`，对最终巧思执行 `pattern-show PATTERN_ID --source`。巧思包包含完整机制、Prompt、参数、来源观察与证据等级，以及 `sourceCaseBundles`；`source` 自动读取 `sourceFiles` 中的实际源码。形成包含案例／巧思 ID、上游 commit、职责与适配方式的短设计依据。`sources[].evidence` 区分实站观察 `observed`、教学改编 `adapted` 与推导 `inferred`；通过来源案例理解机制在完整页面中的效果，按原有证据等级表述。
 
 素材取材先执行 `material-show MATERIAL_ID --source`，读取完整资源信息、交互示例、接入方法、许可、来源版本与限制。样例是从资源中选择的代表用法，覆盖范围以素材包中的说明为准；更完整的组件、参数和资产通过其上游链接查阅。按当前技术栈判断示例中的依赖和集成成本，保留许可要求与第三方署名；区分资源本身的能力、样例实际验证的行为和为当前页面做的适配。
 
@@ -74,7 +74,7 @@ python ATLAS_SCRIPT --session SESSION_FILE refresh
 
 ## 取得完整材料并实现
 
-需要可运行参考时执行 `export`、`pattern-export` 或 `material-export`，保留仓库相对目录并核验全部文件。目标目录必须尚不存在。巧思导出自动取得相关案例的完整 demo、素材和上下文，`atlas-export.json` 保留巧思包、`sourceFiles`、来源案例包、文件摘要与上游版本；以原子机制的职责取材，完整 demo 用于理解页面关系。素材导出保留资源包、样例源码和许可上下文，目录中的实际文件由清单决定。各导出均支持 `--code-only` 仅下载源码与上下文，并列明未下载素材及预览。完整预览媒体按清单补齐，用静态 HTTP 服务器服务导出根目录，打开输出的 `entrypoint` 或 `entrypoints[].path`。
+需要可运行参考时执行 `export`、`pattern-export` 或 `material-export`，按固定的 Git 提交读取文件，保留仓库相对目录。目标目录必须尚不存在。巧思导出自动取得相关案例的完整 demo、素材和上下文，`atlas-export.json` 保留巧思包、`sourceFiles`、来源案例包、文件路径与上游版本；以原子机制的职责取材，完整 demo 用于理解页面关系。素材导出保留资源包、样例源码和许可上下文，目录中的实际文件由清单决定。各导出均支持 `--code-only` 仅下载源码与上下文，并列明未下载素材及预览。完整预览媒体按清单补齐，用静态 HTTP 服务器服务导出根目录，打开输出的 `entrypoint` 或 `entrypoints[].path`。
 
 从案例提取信息层级、布局节奏、色彩、字体、组件状态、交互和响应式行为，将跨案例机制适配到同一套视觉与交互系统。兄弟页面复用已有组件与布局约定，差异由各自的功能需要决定。保留项目结构与用户确认的约束，按当前真实内容与功能实现所需模块。案例中的品牌、占位内容、外部素材和模拟行为各有来源，按当前产品替换或核实。
 

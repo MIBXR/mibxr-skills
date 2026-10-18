@@ -2,7 +2,6 @@
 """Retrieve Design Atlas references without a website UI or third-party packages."""
 
 import argparse
-import hashlib
 import json
 import os
 import re
@@ -16,10 +15,7 @@ from pathlib import Path, PurePosixPath
 from datetime import datetime, timezone
 
 SKILL_ROOT = Path(__file__).resolve().parent.parent
-HASH = re.compile(r"^[0-9a-f]{64}$")
 COMMIT = re.compile(r"^[0-9a-f]{40}$")
-ROLES = {"source", "asset", "context", "preview"}
-PATTERN_ROLES = {"foundation", "support", "accent"}
 EXPERIENCE_TYPES = ('visual', 'micro-motion', 'page-motion', 'sound', 'structure')
 
 
@@ -44,21 +40,6 @@ def no_symlinks(path):
     for component in [path, *path.parents]:
         if component.is_symlink() or (hasattr(component, 'is_junction') and component.is_junction()):
             raise AtlasError(f"Symbolic links and directory junctions are not supported: {component}")
-
-
-def digest(data):
-    return hashlib.sha256(data).hexdigest()
-
-
-def verify_data(data, record):
-    expected = record.get("sha256")
-    count = record.get("bytes")
-    if not isinstance(expected, str) or not HASH.fullmatch(expected):
-        raise AtlasError(f"Missing SHA-256 for {record.get('path', 'resource')}")
-    if not isinstance(count, int) or count < 0 or len(data) != count:
-        raise AtlasError(f"Byte length mismatch: {record.get('path', 'resource')}")
-    if digest(data) != expected:
-        raise AtlasError(f"SHA-256 mismatch: {record.get('path', 'resource')}")
 
 
 def parse_json(data, name):
@@ -93,8 +74,8 @@ class Atlas:
                 saved_session = parse_json(self.session.read_bytes(), str(self.session))
                 if saved_session.get('sessionVersion') != 1 or saved_session.get('repository') != self.repository or saved_session.get('schemaVersion') != lock['schemaVersion']:
                     raise AtlasError('Session repository or schema is incompatible; use a separate session file')
-                if not COMMIT.fullmatch(str(saved_session.get('ref', ''))) or not HASH.fullmatch(str(saved_session.get('contentVersion', ''))):
-                    raise AtlasError('Session ref or contentVersion is invalid')
+                if not COMMIT.fullmatch(str(saved_session.get('ref', ''))):
+                    raise AtlasError('Session ref is invalid')
                 self.previous_ref = saved_session['ref']
                 self.default_branch = saved_session.get('defaultBranch')
         self.local = Path(args.local_root).absolute() if args.local_root else None
@@ -117,45 +98,13 @@ class Atlas:
             self.resolution = 'latest-default-branch'
         self.base = f"https://raw.githubusercontent.com/{self.repository}/{self.ref}/"
         self.catalog = parse_json(self.read(lock["catalog"]), lock["catalog"])
-        if self.catalog.get("schemaVersion") != lock["schemaVersion"]:
-            raise AtlasError("Catalog schemaVersion is incompatible with this skill")
-        entries = self.catalog.get("entries")
-        if not isinstance(entries, list) or self.catalog.get("entryCount") != len(entries):
-            raise AtlasError("Catalog entries or entryCount are invalid")
-        if not HASH.fullmatch(str(self.catalog.get("contentVersion", ""))):
-            raise AtlasError("Catalog contentVersion must be a SHA-256 digest")
-        if self.catalog.get("repository") not in {self.repository, f"https://github.com/{self.repository}"}:
-            raise AtlasError("Catalog repository differs from upstream.lock.json")
-        self.entries = {}
-        for entry in entries:
-            case_id = entry.get("id")
-            if not isinstance(case_id, str) or not re.fullmatch(r"[a-z0-9][a-z0-9-]*", case_id):
-                raise AtlasError("Catalog contains an invalid case ID")
-            if case_id in self.entries:
-                raise AtlasError(f"Duplicate case ID: {case_id}")
-            path_parts(entry.get("paths", {}).get("bundle"))
-            if not HASH.fullmatch(str(entry.get("bundleSha256", ""))):
-                raise AtlasError(f"Invalid bundleSha256: {case_id}")
-            self.entries[case_id] = entry
+        self.entries = {entry['id']: entry for entry in self.catalog['entries']}
         self.patterns = None
-        self.pattern_catalog = None
         self.materials = None
-        self.material_catalog = None
-        version = ''.join(f"{case_id}:{self.entries[case_id]['bundleSha256']}\n" for case_id in sorted(self.entries))
-        if 'patterns' in self.catalog:
-            self.load_patterns(self.catalog['patterns'])
-            version += f"patterns:{self.pattern_catalog['contentVersion']}\n"
-        if 'materials' in self.catalog:
-            self.load_materials(self.catalog['materials'])
-            version += f"materials:{self.material_catalog['contentVersion']}\n"
-        if digest(version.encode('utf-8')) != self.catalog['contentVersion']:
-            raise AtlasError('Catalog contentVersion differs from its case, pattern and material hashes')
         if args.command.startswith('pattern-'):
             self.require_patterns()
         if args.command.startswith('material-'):
             self.require_materials()
-        if saved_session and args.command != 'refresh' and saved_session['contentVersion'] != self.catalog['contentVersion']:
-            raise AtlasError('Session catalog contentVersion differs from the pinned catalog')
         if self.session and (saved_session is None or args.command == 'refresh'):
             self.write_session(replace=saved_session is not None)
 
@@ -182,7 +131,6 @@ class Atlas:
         state = {
             'sessionVersion': 1, 'repository': self.repository, 'ref': self.ref,
             'defaultBranch': self.default_branch, 'schemaVersion': self.catalog['schemaVersion'],
-            'contentVersion': self.catalog['contentVersion'],
             'resolvedAt': datetime.now(timezone.utc).isoformat(),
         }
         no_symlinks(self.session)
@@ -231,7 +179,6 @@ class Atlas:
             "repository": self.repository,
             "ref": self.ref if self.local is None else None,
             "localRoot": str(self.local) if self.local else None,
-            "contentVersion": self.catalog["contentVersion"],
             "schemaVersion": self.catalog["schemaVersion"],
             "resolution": self.resolution,
             "defaultBranch": self.default_branch,
@@ -241,219 +188,40 @@ class Atlas:
     def bundle(self, case_id):
         if case_id not in self.entries:
             raise AtlasError(f"Unknown case ID: {case_id}")
-        entry = self.entries[case_id]
-        data = self.read(entry["paths"]["bundle"])
-        if digest(data) != entry["bundleSha256"]:
-            raise AtlasError(f"Bundle SHA-256 mismatch: {case_id}")
-        bundle = parse_json(data, entry["paths"]["bundle"])
-        if bundle.get("schemaVersion") != self.catalog["schemaVersion"] or bundle.get("id") != case_id:
-            raise AtlasError(f"Bundle identity or schemaVersion mismatch: {case_id}")
-        if bundle.get("entry", {}).get("id") != case_id:
-            raise AtlasError(f"Bundle entry identity mismatch: {case_id}")
-        validate_bundle_files(bundle, case_id)
-        return bundle
-
-    def load_materials(self, manifest):
-        if not isinstance(manifest, dict) or manifest.get('path') != 'agent/materials.json':
-            raise AtlasError('Invalid materials manifest path')
-        data = self.read(manifest['path'])
-        verify_data(data, manifest)
-        catalog = parse_json(data, manifest['path'])
-        if catalog.get('schemaVersion') != 1:
-            raise AtlasError('Material catalog schemaVersion is incompatible with this skill')
-        if catalog.get('repository') not in {self.repository, f'https://github.com/{self.repository}'}:
-            raise AtlasError('Material catalog repository differs from the case catalog')
-        rows = catalog.get('materials')
-        if not isinstance(rows, list) or catalog.get('materialCount') != len(rows) or manifest.get('materialCount') != len(rows):
-            raise AtlasError('Material catalog materials or materialCount are invalid')
-        self.materials = {}
-        for row in rows:
-            if not isinstance(row, dict):
-                raise AtlasError('Material catalog contains an invalid material')
-            material_id = row.get('id')
-            if not isinstance(material_id, str) or not re.fullmatch(r'[a-z0-9][a-z0-9-]*', material_id):
-                raise AtlasError('Material catalog contains an invalid material ID')
-            if material_id in self.materials:
-                raise AtlasError(f'Duplicate material ID: {material_id}')
-            if row.get('paths', {}).get('bundle') != f'agent/materials/{material_id}.json':
-                raise AtlasError(f'Material bundle path differs from its identity: {material_id}')
-            for path in row['paths'].values():
-                path_parts(path)
-            if not HASH.fullmatch(str(row.get('bundleSha256', ''))):
-                raise AtlasError(f'Invalid material bundleSha256: {material_id}')
-            for field in ('title', 'type', 'category', 'summary'):
-                if not isinstance(row.get(field), str) or not row[field].strip():
-                    raise AtlasError(f'Material {material_id} has no {field}')
-            for field in ('tags', 'useCases', 'avoid', 'constraints'):
-                if not isinstance(row.get(field), list) or any(not isinstance(value, str) for value in row[field]):
-                    raise AtlasError(f'Material {material_id} has invalid {field}')
-            self.materials[material_id] = row
-        version = ''.join(f"{material_id}:{self.materials[material_id]['bundleSha256']}\n" for material_id in sorted(self.materials))
-        if digest(version.encode('utf-8')) != catalog.get('contentVersion') or manifest.get('contentVersion') != catalog.get('contentVersion'):
-            raise AtlasError('Material catalog contentVersion differs from its manifest or bundle hashes')
-        self.material_catalog = catalog
+        path = self.entries[case_id]['paths']['bundle']
+        return parse_json(self.read(path), path)
 
     def require_materials(self):
         if self.materials is None:
-            raise AtlasError('This pinned Atlas version has no content materials library. Keep it for existing commands; use --session SESSION_FILE refresh, a newer --ref, or an updated --local-root to access material commands.')
+            manifest = self.catalog.get('materials')
+            if not manifest:
+                raise AtlasError('This pinned Atlas version has no content materials library. Use --session SESSION_FILE refresh, a newer --ref, or an updated --local-root to access material commands.')
+            catalog = parse_json(self.read(manifest['path']), manifest['path'])
+            self.materials = {row['id']: row for row in catalog['materials']}
 
     def material_bundle(self, material_id):
         self.require_materials()
         if material_id not in self.materials:
             raise AtlasError(f'Unknown material ID: {material_id}')
-        row = self.materials[material_id]
-        data = self.read(row['paths']['bundle'])
-        if digest(data) != row['bundleSha256']:
-            raise AtlasError(f'Material bundle SHA-256 mismatch: {material_id}')
-        bundle = parse_json(data, row['paths']['bundle'])
-        material = bundle.get('material')
-        if bundle.get('schemaVersion') != 1 or bundle.get('id') != material_id or not isinstance(material, dict):
-            raise AtlasError(f'Material bundle identity or schemaVersion mismatch: {material_id}')
-        if any(material.get(key) != value for key, value in row.items() if key not in {'paths', 'bundleSha256'}) or material.get('demo') != row['paths']['demo']:
-            raise AtlasError(f'Material bundle metadata differs from its pinned catalog: {material_id}')
-        validate_bundle_files(bundle, material_id)
-        source_files = bundle.get('sourceFiles')
-        source_paths = {record['path'] for record in bundle['files'] if record['role'] == 'source'}
-        if not isinstance(source_files, list) or not source_files or any(path not in source_paths for path in source_files) or len(set(source_files)) != len(source_files):
-            raise AtlasError(f'Material sourceFiles are absent or invalid in its source manifest: {material_id}')
-        if row['paths']['demo'] not in source_paths:
-            raise AtlasError(f'Material demo is absent from its source manifest: {material_id}')
-        return bundle
-
-    def load_patterns(self, manifest):
-        if not isinstance(manifest, dict) or manifest.get('path') != 'agent/patterns.json':
-            raise AtlasError('Invalid patterns manifest path')
-        data = self.read(manifest['path'])
-        verify_data(data, manifest)
-        catalog = parse_json(data, manifest['path'])
-        if catalog.get('schemaVersion') != 1:
-            raise AtlasError('Pattern catalog schemaVersion is incompatible with this skill')
-        if catalog.get('repository') not in {self.repository, f'https://github.com/{self.repository}'}:
-            raise AtlasError('Pattern catalog repository differs from the case catalog')
-        rows = catalog.get('patterns')
-        if not isinstance(rows, list) or catalog.get('patternCount') != len(rows) or manifest.get('patternCount') != len(rows):
-            raise AtlasError('Pattern catalog patterns or patternCount are invalid')
-        self.patterns = {}
-        for row in rows:
-            if not isinstance(row, dict):
-                raise AtlasError('Pattern catalog contains an invalid pattern')
-            pattern_id = row.get('id')
-            if not isinstance(pattern_id, str) or not re.fullmatch(r'[a-z0-9][a-z0-9-]*', pattern_id):
-                raise AtlasError('Pattern catalog contains an invalid pattern ID')
-            if pattern_id in self.patterns:
-                raise AtlasError(f'Duplicate pattern ID: {pattern_id}')
-            if row.get('paths', {}).get('bundle') != f'agent/patterns/{pattern_id}.json':
-                raise AtlasError(f'Pattern bundle path differs from its identity: {pattern_id}')
-            if not HASH.fullmatch(str(row.get('bundleSha256', ''))):
-                raise AtlasError(f'Invalid pattern bundleSha256: {pattern_id}')
-            for field in ('title', 'category', 'summary', 'mechanism', 'trigger', 'effect', 'prompt'):
-                if not isinstance(row.get(field), str) or not row[field].strip():
-                    raise AtlasError(f'Pattern {pattern_id} has no {field}')
-            for field in ('useCases', 'avoid', 'constraints', 'sourceFiles'):
-                if not isinstance(row.get(field), list) or any(not isinstance(value, str) for value in row[field]):
-                    raise AtlasError(f'Pattern {pattern_id} has invalid {field}')
-            if 'experienceTypes' in row:
-                types = row['experienceTypes']
-                if not isinstance(types, list) or not types or any(value not in EXPERIENCE_TYPES for value in types) or len(set(types)) != len(types):
-                    raise AtlasError(f'Pattern {pattern_id} has invalid experienceTypes')
-            for path in row['sourceFiles']:
-                path_parts(path)
-            if not row['sourceFiles'] or len({p.casefold() for p in row['sourceFiles']}) != len(row['sourceFiles']):
-                raise AtlasError(f'Pattern {pattern_id} has missing or duplicate sourceFiles')
-            sources = row.get('sources')
-            if not isinstance(sources, list) or not sources:
-                raise AtlasError(f'Pattern {pattern_id} has no source case')
-            for source in sources:
-                if not isinstance(source, dict) or source.get('caseId') not in self.entries:
-                    raise AtlasError(f'Pattern {pattern_id} refers to an unknown source case')
-                if source.get('evidence') not in {'observed', 'adapted', 'inferred'}:
-                    raise AtlasError(f'Pattern {pattern_id} has invalid source evidence')
-                if any(not isinstance(source.get(field), str) or not source[field].strip() for field in ('locator', 'observation')):
-                    raise AtlasError(f'Pattern {pattern_id} has incomplete source evidence')
-            composition = row.get('composition')
-            if not isinstance(composition, dict) or composition.get('role') not in PATTERN_ROLES or not isinstance(composition.get('notes'), str):
-                raise AtlasError(f'Pattern {pattern_id} has invalid composition')
-            for field in ('pairsWellWith', 'conflicts'):
-                if not isinstance(composition.get(field), list) or any(not isinstance(value, str) for value in composition[field]):
-                    raise AtlasError(f'Pattern {pattern_id} has invalid composition {field}')
-            accessibility = row.get('accessibility')
-            if not isinstance(accessibility, dict) or any(not isinstance(accessibility.get(field), str) for field in ('keyboard', 'reducedMotion')):
-                raise AtlasError(f'Pattern {pattern_id} has invalid accessibility constraints')
-            parameters = row.get('parameters')
-            if not isinstance(parameters, list) or any(not isinstance(parameter, dict) or any(not isinstance(parameter.get(field), str) for field in ('name', 'value', 'note')) for parameter in parameters):
-                raise AtlasError(f'Pattern {pattern_id} has invalid parameters')
-            self.patterns[pattern_id] = row
-        for pattern_id, row in self.patterns.items():
-            for field in ('pairsWellWith', 'conflicts'):
-                if any(other not in self.patterns or other == pattern_id for other in row['composition'][field]):
-                    raise AtlasError(f'Pattern {pattern_id} has an unknown or self-referential {field} pattern')
-        version = ''.join(f"{pattern_id}:{self.patterns[pattern_id]['bundleSha256']}\n" for pattern_id in sorted(self.patterns))
-        if digest(version.encode('utf-8')) != catalog.get('contentVersion') or manifest.get('contentVersion') != catalog.get('contentVersion'):
-            raise AtlasError('Pattern catalog contentVersion differs from its manifest or bundle hashes')
-        self.pattern_catalog = catalog
+        path = self.materials[material_id]['paths']['bundle']
+        return parse_json(self.read(path), path)
 
     def require_patterns(self):
         if self.patterns is None:
-            raise AtlasError('This pinned Atlas version has no design patterns library. Keep it for case commands; use --session SESSION_FILE refresh, a newer --ref, or an updated --local-root to access pattern commands.')
+            manifest = self.catalog.get('patterns')
+            if not manifest:
+                raise AtlasError('This pinned Atlas version has no design patterns library. Use --session SESSION_FILE refresh, a newer --ref, or an updated --local-root to access pattern commands.')
+            catalog = parse_json(self.read(manifest['path']), manifest['path'])
+            self.patterns = {row['id']: row for row in catalog['patterns']}
 
     def pattern_bundle(self, pattern_id):
         self.require_patterns()
         if pattern_id not in self.patterns:
             raise AtlasError(f'Unknown pattern ID: {pattern_id}')
-        row = self.patterns[pattern_id]
-        data = self.read(row['paths']['bundle'])
-        if digest(data) != row['bundleSha256']:
-            raise AtlasError(f'Pattern bundle SHA-256 mismatch: {pattern_id}')
-        bundle = parse_json(data, row['paths']['bundle'])
-        pattern = {key: value for key, value in row.items() if key not in {'paths', 'bundleSha256'}}
-        if bundle.get('schemaVersion') != 1 or bundle.get('id') != pattern_id or bundle.get('pattern') != pattern:
-            raise AtlasError(f'Pattern bundle identity, schemaVersion or metadata mismatch: {pattern_id}')
-        sources = bundle.get('sourceCases')
-        expected = {source['caseId'] for source in row['sources']}
-        if not isinstance(sources, list) or len(sources) != len(expected):
-            raise AtlasError(f'Pattern source case identities are invalid: {pattern_id}')
-        seen = set()
-        cases = []
-        for source in sources:
-            if not isinstance(source, dict) or source.get('id') not in expected or source['id'] in seen:
-                raise AtlasError(f'Pattern source case identity mismatch: {pattern_id}')
-            case_id = source['id']
-            seen.add(case_id)
-            entry = self.entries[case_id]
-            if source.get('title') != entry['title'] or source.get('bundleSha256') != entry['bundleSha256'] or source.get('paths') != {key: entry['paths'][key] for key in ('bundle', 'demo')}:
-                raise AtlasError(f'Pattern source case metadata or SHA-256 differs from the pinned case catalog: {case_id}')
-            case = self.bundle(case_id)
-            if case['entry'].get('title') != source['title'] or case['entry'].get('demo') != source['paths']['demo']:
-                raise AtlasError(f'Pattern source case title or demo differs from its verified case bundle: {case_id}')
-            if not any(record['path'] == source['paths']['demo'] and record['role'] == 'source' for record in case['files']):
-                raise AtlasError(f'Pattern source case demo is absent from its source manifest: {case_id}')
-            cases.append(case)
-        records = merged_files(cases)
-        files = {record['path'] for record in records}
-        if any(path not in files for path in row['sourceFiles']):
-            raise AtlasError(f'Pattern sourceFiles are absent from verified source case manifests: {pattern_id}')
+        path = self.patterns[pattern_id]['paths']['bundle']
+        bundle = parse_json(self.read(path), path)
+        cases = [self.bundle(source['id']) for source in bundle['sourceCases']]
         return bundle, cases
-
-
-def validate_bundle_files(bundle, bundle_id):
-    documents = bundle.get('documents')
-    files = bundle.get('files')
-    if not isinstance(documents, list) or not isinstance(files, list):
-        raise AtlasError(f'Bundle documents/files are invalid: {bundle_id}')
-    seen = set()
-    for record in files:
-        path_parts(record.get('path'))
-        key = record['path'].casefold()
-        if key in seen or record['role'] not in ROLES:
-            raise AtlasError(f'Duplicate file path or invalid role: {record["path"]}')
-        seen.add(key)
-        if not HASH.fullmatch(str(record.get('sha256', ''))) or not isinstance(record.get('bytes'), int):
-            raise AtlasError(f'Invalid file integrity metadata: {record["path"]}')
-    for document in documents:
-        path_parts(document.get('path'))
-        if not isinstance(document.get('content'), str):
-            raise AtlasError(f'Document has no full text: {document.get("path")}')
-        verify_data(document['content'].encode('utf-8'), document)
 
 
 def emit(value):
@@ -466,10 +234,7 @@ def merged_files(cases):
         for record in case['files']:
             key = record['path'].casefold()
             if key in records:
-                previous = records[key]
-                if any(previous[field] != record[field] for field in ('path', 'sha256', 'bytes', 'role')):
-                    raise AtlasError(f'Source case manifests disagree on shared file: {record["path"]}')
-                previous['caseIds'].append(case['id'])
+                records[key]['caseIds'].append(case['id'])
             else:
                 records[key] = {**record, 'caseIds': [case['id']]}
     return list(records.values())
@@ -480,7 +245,6 @@ def read_source(atlas, records):
     for record in records:
         if record['role'] == 'source':
             data = atlas.read(record['path'])
-            verify_data(data, record)
             try:
                 content = data.decode('utf-8')
             except UnicodeError as exc:
@@ -508,24 +272,14 @@ def search(atlas, args):
         results.append(summary)
     results.sort(key=lambda row: (-row["score"], row["id"]))
     offset = args.offset
-    emit({"schemaVersion": 1, "contentVersion": atlas.catalog['contentVersion'], "provenance": atlas.provenance(), "query": args.query, "method": "keyword", "total": len(results), "offset": offset, "limit": args.limit, "hasMore": offset + args.limit < len(results), "results": results[offset:offset + args.limit]})
+    emit({"schemaVersion": 1, "provenance": atlas.provenance(), "query": args.query, "method": "keyword", "total": len(results), "offset": offset, "limit": args.limit, "hasMore": offset + args.limit < len(results), "results": results[offset:offset + args.limit]})
 
 
 def show(atlas, args):
     bundle = atlas.bundle(args.case_id)
     result = {**bundle, "provenance": atlas.provenance()}
     if args.source:
-        sources = []
-        for record in bundle["files"]:
-            if record["role"] == "source":
-                data = atlas.read(record["path"])
-                verify_data(data, record)
-                try:
-                    content = data.decode("utf-8")
-                except UnicodeError as exc:
-                    raise AtlasError(f"Source is not UTF-8: {record['path']}") from exc
-                sources.append({**record, "content": content})
-        result["source"] = sources
+        result["source"] = read_source(atlas, bundle['files'])
     emit(result)
 
 
@@ -556,7 +310,7 @@ def pattern_search(atlas, args):
         result.update({'experienceTypes': pattern.get('experienceTypes', []), 'sourceCases': source_cases, 'score': score, 'matches': matches})
         results.append(result)
     results.sort(key=lambda row: (-row['score'], row['id']))
-    emit({'schemaVersion': 1, 'contentVersion': atlas.catalog['contentVersion'], 'patternContentVersion': atlas.pattern_catalog['contentVersion'], 'provenance': atlas.provenance(), 'query': args.query, 'filters': {'category': args.category, 'type': args.type, 'case': args.case}, 'method': 'keyword', 'total': len(results), 'offset': args.offset, 'limit': args.limit, 'hasMore': args.offset + args.limit < len(results), 'results': results[args.offset:args.offset + args.limit]})
+    emit({'schemaVersion': 1, 'provenance': atlas.provenance(), 'query': args.query, 'filters': {'category': args.category, 'type': args.type, 'case': args.case}, 'method': 'keyword', 'total': len(results), 'offset': args.offset, 'limit': args.limit, 'hasMore': args.offset + args.limit < len(results), 'results': results[args.offset:args.offset + args.limit]})
 
 
 def pattern_show(atlas, args):
@@ -586,7 +340,7 @@ def material_search(atlas, args):
         score = sum(4 if field in {'id', 'title', 'tags', 'useCases'} else 1 if field in {'avoid', 'constraints'} else 2 for match in matches for field in match['fields'])
         results.append({**{key: material[key] for key in [*fields, 'paths']}, 'score': score, 'matches': matches})
     results.sort(key=lambda row: (-row['score'], row['id']))
-    emit({'schemaVersion': 1, 'contentVersion': atlas.catalog['contentVersion'], 'materialContentVersion': atlas.material_catalog['contentVersion'], 'provenance': atlas.provenance(), 'query': args.query, 'filters': {'category': args.category, 'type': args.type}, 'method': 'keyword', 'total': len(results), 'offset': args.offset, 'limit': args.limit, 'hasMore': args.offset + args.limit < len(results), 'results': results[args.offset:args.offset + args.limit]})
+    emit({'schemaVersion': 1, 'provenance': atlas.provenance(), 'query': args.query, 'filters': {'category': args.category, 'type': args.type}, 'method': 'keyword', 'total': len(results), 'offset': args.offset, 'limit': args.limit, 'hasMore': args.offset + args.limit < len(results), 'results': results[args.offset:args.offset + args.limit]})
 
 
 def material_show(atlas, args):
@@ -615,7 +369,7 @@ def pattern_export(atlas, args):
         raise AtlasError('Source manifest conflicts with export metadata')
     metadata = {
         'schemaVersion': 1, 'kind': 'pattern', 'id': args.pattern_id,
-        'provenance': atlas.provenance(), 'patternContentVersion': atlas.pattern_catalog['contentVersion'],
+        'provenance': atlas.provenance(),
         'paths': atlas.patterns[args.pattern_id]['paths'], 'codeOnly': args.code_only,
         'sourceFiles': bundle['pattern']['sourceFiles'], 'files': selected,
         'omitted': [record['path'] for record in records if record not in selected],
@@ -628,7 +382,6 @@ def pattern_export(atlas, args):
     try:
         for record in selected:
             data = atlas.read(record['path'])
-            verify_data(data, record)
             target = out.joinpath(*path_parts(record['path']))
             no_symlinks(target)
             target.parent.mkdir(parents=True, exist_ok=True)
@@ -641,7 +394,7 @@ def pattern_export(atlas, args):
         no_symlinks(out)
         shutil.rmtree(out)
         raise
-    emit({'kind': 'pattern', 'id': args.pattern_id, 'provenance': atlas.provenance(), 'directory': str(out), 'files': len(selected), 'bytes': sum(record['bytes'] for record in selected), 'sourceFiles': metadata['sourceFiles'], 'omitted': metadata['omitted'], 'entrypoints': metadata['entrypoints']})
+    emit({'kind': 'pattern', 'id': args.pattern_id, 'provenance': atlas.provenance(), 'directory': str(out), 'files': len(selected), 'sourceFiles': metadata['sourceFiles'], 'omitted': metadata['omitted'], 'entrypoints': metadata['entrypoints']})
 
 
 def export(atlas, args, kind='case'):
@@ -660,7 +413,6 @@ def export(atlas, args, kind='case'):
     try:
         for record in selected:
             data = atlas.read(record["path"])
-            verify_data(data, record)
             target = out.joinpath(*path_parts(record["path"]))
             no_symlinks(target)
             target.parent.mkdir(parents=True, exist_ok=True)
@@ -675,14 +427,14 @@ def export(atlas, args, kind='case'):
             "bundle": bundle,
         }
         if kind == 'material':
-            metadata.update({'kind': kind, 'materialContentVersion': atlas.material_catalog['contentVersion'], 'sourceFiles': bundle['sourceFiles']})
+            metadata.update({'kind': kind, 'sourceFiles': bundle['sourceFiles']})
         with (out / "atlas-export.json").open("x", encoding="utf-8", newline="\n") as handle:
             json.dump(metadata, handle, ensure_ascii=False, indent=2)
             handle.write("\n")
     except Exception:
         shutil.rmtree(out)
         raise
-    result = {"id": bundle_id, "provenance": atlas.provenance(), "directory": str(out), "files": len(selected), "bytes": sum(r['bytes'] for r in selected), "omitted": metadata['omitted'], "entrypoint": metadata["paths"]["demo"]}
+    result = {"id": bundle_id, "provenance": atlas.provenance(), "directory": str(out), "files": len(selected), "omitted": metadata['omitted'], "entrypoint": metadata["paths"]["demo"]}
     if kind == 'material':
         result['kind'] = kind
     emit(result)
@@ -702,7 +454,7 @@ def main():
     detail = commands.add_parser("show", help="Read the full case bundle and optionally full source")
     detail.add_argument("case_id")
     detail.add_argument("--source", action="store_true")
-    save = commands.add_parser("export", help="Download and hash-verify a case into a new directory")
+    save = commands.add_parser("export", help="Download a case into a new directory")
     save.add_argument("case_id")
     save.add_argument("--out", required=True)
     save.add_argument("--code-only", action="store_true", help="Download source/context and explicitly list omitted media")
@@ -716,7 +468,7 @@ def main():
     pattern_detail = commands.add_parser('pattern-show', help='Read a complete pattern, its source case context and optionally relevant source')
     pattern_detail.add_argument('pattern_id')
     pattern_detail.add_argument('--source', action='store_true')
-    pattern_save = commands.add_parser('pattern-export', help='Download and verify a pattern and its related case demos/context')
+    pattern_save = commands.add_parser('pattern-export', help='Download a pattern and its related case demos/context')
     pattern_save.add_argument('pattern_id')
     pattern_save.add_argument('--out', required=True)
     pattern_save.add_argument('--code-only', action='store_true', help='Download source/context and explicitly list omitted media')
@@ -729,11 +481,11 @@ def main():
     material_detail = commands.add_parser('material-show', help='Read a complete resource bundle and optionally full example source')
     material_detail.add_argument('material_id')
     material_detail.add_argument('--source', action='store_true')
-    material_save = commands.add_parser('material-export', help='Download and hash-verify a resource and its runnable examples')
+    material_save = commands.add_parser('material-export', help='Download a resource and its runnable examples')
     material_save.add_argument('material_id')
     material_save.add_argument('--out', required=True)
     material_save.add_argument('--code-only', action='store_true', help='Download source/context and explicitly list omitted media')
-    info = commands.add_parser("info", help="Verify the catalog and report the active upstream version")
+    info = commands.add_parser("info", help="Report the active upstream version and directory counts")
     commands.add_parser("refresh", help="Resolve the latest default-branch commit and atomically refresh --session")
     args = parser.parse_args()
     if hasattr(args, "limit") and not 1 <= args.limit <= 100:
@@ -765,7 +517,7 @@ def main():
         elif args.command == 'material-export':
             material_export(atlas, args)
         else:
-            result = {"provenance": atlas.provenance(), "entryCount": len(atlas.entries), 'patternCount': len(atlas.patterns) if atlas.patterns is not None else None, 'materialCount': len(atlas.materials) if atlas.materials is not None else None}
+            result = {"provenance": atlas.provenance(), "entryCount": len(atlas.entries), 'patternCount': atlas.catalog.get('patterns', {}).get('patternCount'), 'materialCount': atlas.catalog.get('materials', {}).get('materialCount')}
             if args.command == 'refresh':
                 result.update({'previousRef': atlas.previous_ref, 'refChanged': atlas.previous_ref != atlas.ref})
             emit(result)
