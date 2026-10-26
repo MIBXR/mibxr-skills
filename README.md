@@ -16,8 +16,6 @@
 
 `material-search` 支持关键词、资源类型（如 `--type component-library`）、分类和完整分页。`material-show --source` 返回资源接入方式、许可、来源版本、交互样例与源码；`material-export` 导出清单中的样例、依赖和上下文，支持 `--code-only` 并列明未下载媒体。素材与案例、巧思共享会话版本；缺少素材目录的旧版本仍可使用已有命令，素材命令提示显式刷新。素材包中的样例展示代表用法，完整资源继续通过上游仓库查阅。
 
-在仓库根目录运行 `python -m unittest discover -s tests -v` 可执行标准库行为测试；测试无需联网，安装技能时无需携带 `tests/`。
-
 ```text
 请使用 $skill-installer，从 MIBXR/mibxr-skills 的 main 分支安装
 skills/design-atlas。
