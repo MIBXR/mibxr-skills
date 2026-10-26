@@ -1,4 +1,0 @@
-interface:
-  display_name: "Design Atlas 前端设计参考"
-  short_description: "探索案例、设计巧思与内容素材，组合参考并取得示例源码和来源上下文"
-  default_prompt: "请使用 $design-atlas 探索案例、设计巧思与内容素材，围绕当前网站需求选择视觉、机制和资源，自动取得示例源码、许可与来源上下文，实现并验证页面。"

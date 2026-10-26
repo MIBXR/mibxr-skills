@@ -1,34 +1,50 @@
 # MIBXR Skills
 
-把桌宠制作与前端设计参考的工作方法，整理成换一台电脑也能继续使用的 Agent 技能。
+把网页设计参考、影像与操作台参考、桌宠制作与交付的工作方法，整理成换一台电脑也能继续使用的 Agent 技能。
 
-## 前端设计参考 Skill
+## 网页设计参考 Skill（web-atlas）
 
-`$design-atlas` 把 [Design Atlas](https://github.com/MIBXR/design-atlas) 接入真实网站任务：从完整案例选择视觉方向，从独立的设计巧思挑选可复用机制，从内容素材寻找适合的组件、图片、声音、字体等资源，围绕当前需求筛选并组合，再自动读取示例源码、提示词与来源上下文。用户无需先知道 ID。
+`$web-atlas` 把 [Web Atlas](https://github.com/MIBXR/web-atlas) 接入真实网站任务：先读现场、写简报，只补问会改变决定的问题，复述理解后检索收敛，再给出 2–3 个有差异的对照方案，拆解用户反应后定稿、取材、实现并验证。用户说不清想要什么时，也从真实内容和使用场景逐步找出方向，无需先知道 ID。
 
-本仓库只保存工作流、检索脚本与上游配置。案例、巧思和素材数据、完整前端、交互样例、视觉预览和提示词由 `MIBXR/design-atlas` 维护；网站与 Agent 读取同一份资料，自动取得完整材料。
+本仓库只保存工作流、检索脚本与上游配置。案例、巧思和素材数据、完整前端、交互样例、视觉预览和提示词由 `MIBXR/web-atlas` 维护；网站与 Agent 读取同一份资料，自动取得完整材料。
 
 获取的案例包同时保留网页右侧说明的实际渲染内容、完整原始字段与文档，让 Agent 能核对网页说明与结构化资料。
 
-[阅读技能正文](skills/design-atlas/SKILL.md)。检索脚本使用 Python 标准库，新会话从上游默认分支解析最新 Git SHA，所以新增案例可以自动被发现；同一任务通过用户工作目录中的 `--session` 固定版本，探索和完整取材保持一致。`refresh` 显式更新会话，`--ref` 支持复现指定版本，`--local-root` 支持离线读取。技能安装目录不保存会话状态。取材只固定 Git 提交，不计算或核对内容摘要；案例、巧思和素材目录按命令读取。
-
-`pattern-search` 支持关键词、体验类型（`--type visual / micro-motion / page-motion / sound / structure`，每次选一个）、功能分类、来源案例过滤和完整分页。视觉、微动效、页面动效、声音、内容与组织由上游逐项标注，一项巧思可属于多种体验，不要求每个案例包含全部类型；声音按实际场景和核验证据选择。`pattern-show --source` 返回机制、组合职责、冲突提示、可访问性约束、证据等级及源码；`pattern-export` 自动导出相关 demo 与上下文，并保留上游版本和文件路径。案例与巧思共享一个会话版本，刷新失败保留原会话；旧版本继续支持原有案例命令，无类型标注的巧思仍可取材，类型筛选提示显式刷新。
-
-`material-search` 支持关键词、资源类型（如 `--type component-library`）、分类和完整分页。`material-show --source` 返回资源接入方式、许可、来源版本、交互样例与源码；`material-export` 导出清单中的样例、依赖和上下文，支持 `--code-only` 并列明未下载媒体。素材与案例、巧思共享会话版本；缺少素材目录的旧版本仍可使用已有命令，素材命令提示显式刷新。素材包中的样例展示代表用法，完整资源继续通过上游仓库查阅。
+[阅读技能正文](skills/web-atlas/SKILL.md)。Python 标准库脚本通过 `--session` 固定上游默认分支的 Git SHA，支持 `refresh`、指定 `--ref` 和离线 `--local-root`，状态保存在用户工作目录。案例、巧思与素材分别检索、分页和完整取材，导出保留仓库路径、版本与未下载媒体清单；参数及示例见 [CLI 参考](skills/web-atlas/references/cli.md)。
 
 ```text
 请使用 $skill-installer，从 MIBXR/mibxr-skills 的 main 分支安装
-skills/design-atlas。
+skills/web-atlas。
 如果已经安装同名技能，先保留本地修改，再更新。
 ```
 
 ```text
-$design-atlas 为这个 B2B 分析工具寻找适合高密度信息的设计，读取候选案例的完整上下文，再适配我的 React 项目。
-$design-atlas 参考 apple-product 的产品叙事和空间节奏，为我的真实产品实现落地页。
-$design-atlas 对比两种适合个人作品集的风格，说明选择依据并实现合适的方案。
-$design-atlas 为我的产品页挑选首屏聚焦与加载反馈的巧思，跨案例组合，说明各自职责、冲突和减少动态后的行为，再实现。
-$design-atlas 为我的产品页分别挑选静态视觉和按钮微动效，保留页面叙事节奏；只在内容需要时加入页面动效或声音。
-$design-atlas 从素材库读取 shaders 的可交互样例、许可与源码，为我的品牌页选择一种背景效果，沿用现有布局并验证减少动态后的状态。
+$web-atlas 我想给我的独立工作室做个官网，但说不清想要什么样子。
+$web-atlas 这个 B2B 分析工具的落地页看起来很普通，帮我找方向并实现。
+$web-atlas 参考 apple-product 的产品叙事和空间节奏，为我的真实产品实现落地页。
+$web-atlas 我的作品集页面"太冷了，也没记忆点"，帮我改。
+$web-atlas 为我的产品页挑选首屏聚焦与加载反馈的巧思，跨案例组合并实现。
+```
+
+## 影像与操作台参考 Skill（motion-atlas）
+
+`$motion-atlas` 把 [Motion Atlas](https://github.com/MIBXR/motion-atlas) 接入时间线作品任务：先读现场、写简报，只补问会改变决定的问题，复述理解后检索收敛，再用关键帧条与短片段对照 2–3 个有差异的方向，拆解用户反应后定稿、取材、实现、验证并逐帧出片。用于影像视频和固定画幅、带自动驾驶时间轴的交互操作台与展示台。
+
+本仓库只保存工作流、检索脚本与上游配置。案例、巧思、节拍表、Prompt 与可逐帧渲染的 Demo 由 `MIBXR/motion-atlas` 维护；完整取材保留条目、Prompt、入口与文件清单。
+
+[阅读技能正文](skills/motion-atlas/SKILL.md)。Python 标准库脚本通过 `--session` 固定上游默认分支的 Git SHA，支持 `refresh`、指定 `--ref` 和离线 `--local-root`，状态保存在用户工作目录。检索可按案例／巧思、载体和类型过滤并完整分页，导出保留仓库路径、版本与未下载文件清单；参数及示例见 [CLI 参考](skills/motion-atlas/references/cli.md)。
+
+```text
+请使用 $skill-installer，从 MIBXR/mibxr-skills 的 main 分支安装
+skills/motion-atlas。
+如果已经安装同名技能，先保留本地修改，再更新。
+```
+
+```text
+$motion-atlas 我需要一支 30 秒的产品发布片头，放在发布会大屏上，不知道该做成什么风格。
+$motion-atlas 把我这趟旅行的照片做成一支竖屏短片，节奏像游戏过场。
+$motion-atlas 参考 archive-os，为我的展会做一个固定画幅、可以自动播放也能操作的档案展示台。
+$motion-atlas 这段片头"太拖了，不够燃"，帮我改。
 ```
 
 ## 桌宠制作与交付 Skill

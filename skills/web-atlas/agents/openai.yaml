@@ -1,0 +1,4 @@
+interface:
+  display_name: "Web Atlas 网页设计参考"
+  short_description: "剖析网页需求、给出有差异的对照方案，组合案例、巧思与素材并取得源码实现"
+  default_prompt: "请使用 $web-atlas：先读现场并写简报，只补问会改变决定的问题，复述理解后检索，给出 2–3 个有差异的对照方案，再按我的反应定稿、取材、实现并验证页面。"
