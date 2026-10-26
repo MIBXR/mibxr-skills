@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Retrieve Design Atlas references without a website UI or third-party packages."""
+"""Retrieve Web Atlas references without a website UI or third-party packages."""
 
 import argparse
 import json
@@ -111,7 +111,7 @@ class Atlas:
     def resolve_latest(self):
         api = f'https://api.github.com/repos/{self.repository}'
         def request_json(url):
-            request = urllib.request.Request(url, headers={'User-Agent': 'mibxr-design-atlas-skill/1', 'Accept': 'application/vnd.github+json'})
+            request = urllib.request.Request(url, headers={'User-Agent': 'mibxr-web-atlas-skill/1', 'Accept': 'application/vnd.github+json'})
             try:
                 with urllib.request.urlopen(request, timeout=60) as response:
                     return parse_json(response.read(), url)
@@ -167,7 +167,7 @@ class Atlas:
                 return target.read_bytes()
             except OSError as exc:
                 raise AtlasError(f"Cannot read local file {path}: {exc}") from exc
-        request = urllib.request.Request(self.url(path), headers={"User-Agent": "mibxr-design-atlas-skill/1"})
+        request = urllib.request.Request(self.url(path), headers={"User-Agent": "mibxr-web-atlas-skill/1"})
         try:
             with urllib.request.urlopen(request, timeout=60) as response:
                 return response.read()
@@ -442,7 +442,7 @@ def export(atlas, args, kind='case'):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--local-root", help="Read a local Design Atlas checkout without network access")
+    parser.add_argument("--local-root", help="Read a local Web Atlas checkout without network access")
     parser.add_argument("--ref", help="Retrieve an explicit full 40-character Git commit for reproduction")
     parser.add_argument("--session", help="Pin this workflow's resolved commit in a JSON file in the user's working directory")
     commands = parser.add_subparsers(dest="command", required=True)
@@ -523,7 +523,7 @@ def main():
             emit(result)
         return 0
     except (AtlasError, OSError, KeyError, TypeError) as exc:
-        print(f"design-atlas: {exc}", file=sys.stderr)
+        print(f"web-atlas: {exc}", file=sys.stderr)
         return 1
 
 

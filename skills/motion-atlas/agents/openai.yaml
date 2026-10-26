@@ -1,0 +1,4 @@
+interface:
+  display_name: "Motion Atlas 影像与操作台参考"
+  short_description: "剖析时间线作品需求、用关键帧条与短片段对照方向，组合案例与巧思实现并逐帧出片"
+  default_prompt: "请使用 $motion-atlas：先读现场并写简报，只补问会改变决定的问题，复述理解后检索，给出 2–3 个有差异的对照方案（关键帧条与短片段），再按我的反应定稿、取材、实现、验证并渲染成片。"
