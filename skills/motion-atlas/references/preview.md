@@ -16,7 +16,7 @@ python "$ATLAS_SCRIPT" --local-root "$MOTION_ROOT" export map-pilgrimage --out "
 mkdir -p "$PREVIEW_ROOT/frames"
 ```
 
-`demo` 目标目录必须不存在，重复演示时把 `PREVIEW_ROOT` 改成一个新目录。此处完整导出，不用 `--code-only` 丢掉运行所需媒体。按用户真实内容修改导出副本的 `config.js` 或 `CONFIG`；纯工具验证可保留参考案例内容，但不能称为用户方案。用单独的 Git Bash 终端从整个预览目录启动服务器，同时服务 Demo、关键帧和拼条页面；第二个终端也要将 `PREVIEW_ROOT` 设为同一个目录：
+`demo` 目标目录必须不存在，重复演示时把 `PREVIEW_ROOT` 改成一个新目录。此处完整导出，不用 `--code-only` 丢掉运行所需媒体。按用户真实内容修改导出副本的 `config.js` 或 `CONFIG`。用单独的 Git Bash 终端从整个预览目录启动服务器，同时服务 Demo、关键帧和拼条页面；第二个终端也要将 `PREVIEW_ROOT` 设为同一个目录：
 
 ```bash
 PREVIEW_ROOT=/c/Users/mibxr/Code/MIBXR/_atlas-work/t4-skills/preview-test
@@ -31,7 +31,7 @@ python -m http.server 4331 --bind 127.0.0.1 --directory "$PREVIEW_ROOT"
 
 - `duration`、`markers`、`time`、`playing`；`ready` 是预加载 Promise。
 - `seek(t)` 返回 Promise，等待 `render(t)` 的异步工作；`pause()` 停止播放，`play()` 开始播放。
-- `orient`、`orients` 与 `setOrient(o)`；后者返回 Promise。`orients=[]` 表示没有固定画幅舞台，不能据此宣称支持专用竖版。
+- `orient`、`orients` 与 `setOrient(o)`；后者返回 Promise。`orients=[]` 表示没有固定画幅舞台。
 - 挂了乐谱时，`audio.renderWav({ from, to, sampleRate })` 离线输出 WAV 数据；否则 `audio=null`。
 
 取帧顺序是：打开带 `?render=1&embed=1&orient=landscape` 的入口，等待 `window.__motion` 和 `ready`，调用 `pause()`，再对每个时刻 `await seek(t)` 后截图。真实画面必须只由 `t` 决定；异步地图、图片与字体就绪后再截图，不能用墙上时钟等待代替 seek。
@@ -64,7 +64,7 @@ node "$MOTION_ROOT/scripts/shot.mjs" 'http://127.0.0.1:4331/keyframes.html' --w 
 ```
 
 检查 `keyframes.png` 确实包含六张画面及时间标签，且未裁掉第二行。需要竖版时，另运行取帧命令，改为 `--orient portrait --w 360 --h 640`，输出到 `key-portrait.png`；拼条中的图片路径和 `aspect-ratio` 相应改为竖版，并调整截图高度后检查整条画面。
-横竖两版要来自各自构图；脚本对不支持的画幅可能给出警告，不能将简单缩放当作完成竖版。
+横竖两版要来自各自构图。
 
 ## 关键片段：2–3 秒
 
@@ -76,7 +76,7 @@ node "$MOTION_ROOT/scripts/render.mjs" 'http://127.0.0.1:4331/demo/demos/cases/m
 ```
 
 只需一个画幅时只运行对应命令。工具自动设置 `render=1`、`embed=1`、`orient`，等待 `ready`，逐帧 seek；`--no-encode` 只保留帧序列。没有 ffmpeg 时，按脚本打印的命令合成后再展示关键片段。
-需要听声音时加 `--audio`；只有挂乐谱的 `__motion.audio` 能离线渲染同一区间 WAV，并随 MP4 封装。`--audio-only` 只输出 WAV；`--sample-rate` 默认为 48000。未挂乐谱会提示跳过声音，实时反馈音不能因此算作已经验证。
+需要听声音时加 `--audio`；只有挂乐谱的 `__motion.audio` 能离线渲染同一区间 WAV，并随 MP4 封装。`--audio-only` 只输出 WAV；`--sample-rate` 默认为 48000。未挂乐谱时脚本跳过声音。
 
 渲染器的编码失败不一定让进程返回非零，必须确认 MP4 实际存在并读取其参数：
 
@@ -88,7 +88,7 @@ ffprobe -v error -select_streams v:0 -count_frames -show_entries stream=width,he
 
 ## 资源与完成状态
 
-`map-pilgrimage` 依赖外部 MapLibre、OpenFreeMap 与地形瓦片；默认卡片画面由 `scenes.js` 生成。地图不可用时 Demo 会退回纸面网格，预加载失败或瓦片等待超时后 `ready`／`seek` 也可能完成。取帧成功不能单独证明资源齐全：目视地图与主要元素，必要时在浏览器检查控制台、网络失败及 `#stage` 是否含 `no-map`，结合 `window.__map` 的 `isStyleLoaded()`／`areTilesLoaded()`／`loaded()` 判断。降级或未验证的资源写进交付说明，先修复明确的网络或路径问题再重跑受影响步骤。
+`map-pilgrimage` 依赖外部 MapLibre、OpenFreeMap 与地形瓦片；默认卡片画面由 `scenes.js` 生成。地图不可用时 Demo 会退回纸面网格，预加载失败或瓦片等待超时后 `ready`／`seek` 也可能完成。取帧后目视地图与主要元素已经加载；地图缺失时 `#stage` 含 `no-map`，修复网络或路径后重跑受影响的步骤。
 
 截图工具对 `ready` 的等待为 60 秒，Demo 的预加载上限为 120 秒。慢网导致前者超时时，先检查资源；需要更长等待时在用户项目的无头浏览器中等待 `ready`，再 `await seek(t)` 截图，保留实际等待和未就绪状态，不改只读上游脚本。
 
