@@ -20,6 +20,8 @@ CODE_EXTENSIONS = {
     '.html', '.htm', '.js', '.mjs', '.cjs', '.css', '.json', '.md', '.txt', '.svg',
     '.glsl', '.frag', '.vert', '.wgsl', '.xml', '.csv',
 }
+RESOURCES_UNAVAILABLE = ('This pinned Atlas version has no resources library. '
+                         'Use --session SESSION_FILE refresh, a newer --ref, or an updated --local-root to access resources.')
 
 
 class AtlasError(Exception):
@@ -103,7 +105,7 @@ class Atlas:
         self.catalog = parse_json(self.read(lock["catalog"]), lock["catalog"])
         self.entries = {
             entry['id']: {**entry, 'kind': kind}
-            for kind in ('cases', 'patterns') for entry in self.catalog[kind]
+            for kind in ('cases', 'patterns', 'resources') for entry in self.catalog.get(kind, [])
         }
         if self.session and (saved_session is None or args.command == 'refresh'):
             self.write_session(replace=saved_session is not None)
@@ -187,9 +189,16 @@ class Atlas:
 
     def bundle(self, entry_id):
         if entry_id not in self.entries:
-            raise AtlasError(f"Unknown case or pattern ID: {entry_id}")
+            self.require_resources()
+            raise AtlasError(f"Unknown case, pattern or resource ID: {entry_id}")
         path = self.entries[entry_id]['bundle']
         return parse_json(self.read(path), path)
+
+    def require_resources(self):
+        if 'resources' not in self.catalog:
+            raise AtlasError(RESOURCES_UNAVAILABLE)
+
+
 def emit(value):
     print(json.dumps(value, ensure_ascii=False, indent=2))
 
@@ -207,6 +216,10 @@ def query_terms(query):
 
 
 def search(atlas, args):
+    if args.kind == 'resources':
+        atlas.require_resources()
+    elif not args.kind and 'resources' not in atlas.catalog:
+        print(f'motion-atlas: {RESOURCES_UNAVAILABLE}', file=sys.stderr)
     terms = query_terms(args.query)
     taxonomy = atlas.catalog['taxonomy']
     results = []
@@ -221,7 +234,7 @@ def search(atlas, args):
         labels += [taxonomy['types'][key] for key in entry.get('types', [])]
         groups = [
             (3, [entry['id'], entry['title']]),
-            (2, [*entry.get('tags', []), *labels, *entry.get('carriers', []), *entry.get('types', [])]),
+            (2, [*entry.get('tags', []), *labels, *entry.get('carriers', []), *entry.get('types', []), entry.get('type', '')]),
             (1.5, [entry.get('summary', '')]),
             (1, entry.get('useCases', [])),
         ]
@@ -307,17 +320,17 @@ def main():
     parser.add_argument('--ref', help='Retrieve an explicit full 40-character Git commit for reproduction')
     parser.add_argument('--session', help="Pin this workflow's resolved commit in a JSON file in the user's working directory")
     commands = parser.add_subparsers(dest='command', required=True)
-    find = commands.add_parser('search', help='Search case and pattern metadata by keywords')
+    find = commands.add_parser('search', help='Search case, pattern and resource metadata by keywords')
     find.add_argument('query', nargs='?', default='')
-    find.add_argument('--kind', choices=('cases', 'patterns'), help='Entry kind filter')
+    find.add_argument('--kind', choices=('cases', 'patterns', 'resources'), help='Entry kind filter')
     find.add_argument('--carrier', choices=('video', 'console'), help='Carrier filter')
     find.add_argument('--type', help='Exact pattern type filter from the catalog taxonomy')
     find.add_argument('--limit', type=int, default=5)
     find.add_argument('--offset', type=int, default=0, help='Skip this many ranked results; continue until hasMore is false')
-    detail = commands.add_parser('show', help='Read a case or pattern bundle and optionally full source')
+    detail = commands.add_parser('show', help='Read a case, pattern or resource bundle and optionally full source')
     detail.add_argument('entry_id')
     detail.add_argument('--source', action='store_true')
-    save = commands.add_parser('export', help='Download a case or pattern into a new directory')
+    save = commands.add_parser('export', help='Download a case, pattern or resource into a new directory')
     save.add_argument('entry_id')
     save.add_argument('--out', required=True)
     save.add_argument('--code-only', action='store_true', help='Download only code/text extensions and list other files in notDownloaded')
@@ -345,6 +358,8 @@ def main():
                 'provenance': atlas.provenance(), 'caseCount': len(atlas.catalog['cases']),
                 'patternCount': len(atlas.catalog['patterns']),
             }
+            if 'resources' in atlas.catalog:
+                result['resourceCount'] = len(atlas.catalog['resources'])
             if args.command == 'refresh':
                 result.update({'previousRef': atlas.previous_ref, 'refChanged': atlas.previous_ref != atlas.ref})
             emit(result)
