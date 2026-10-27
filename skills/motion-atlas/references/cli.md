@@ -54,8 +54,8 @@ python ATLAS_SCRIPT --local-root C:/Users/mibxr/Code/MIBXR/motion-atlas search "
 python ATLAS_SCRIPT --session SESSION_FILE refresh
 ```
 
-`--local-root CHECKOUT` 读取本地当前工作树，不能与 `--session` 或 `--ref` 同用；本地输出的 `provenance.ref` 为 `null`，不能把当前目录内容表述为已锁定的远程提交。需要可复现版本时使用完整 Git SHA 的远程取材。
-`refresh` 必须带 `--session`，不与 `--ref` 或 `--local-root` 同用。它重新解析默认分支提交，读取成功后替换会话；失败保留原会话。刷新后重新确认简报中的依据、候选与材料，不混用前后 SHA。
+`--local-root CHECKOUT` 读取本地当前工作树，不能与 `--session` 或 `--ref` 同用；本地输出的 `provenance.ref` 为 `null`。
+`refresh` 必须带 `--session`，不与 `--ref` 或 `--local-root` 同用。它重新解析默认分支提交，读取成功后替换会话；失败保留原会话。刷新后同一任务的材料都取自新的 SHA。
 默认分支解析失败会报错；已有会话、显式 `--ref` 与离线 `--local-root` 分别可用。
 
 `upstream.lock.json` 保存仓库、目录路径、schema 版本与已验证基线；基线不限制默认发现新增条目。当前 Agent catalog 和资料包的 schemaVersion 为 1，读取 `agent/catalog.json`、`agent/cases/<id>.json`、`agent/patterns/<id>.json` 与 `agent/resources/<id>.json`；资源目录为 `agent/resources.json`。
@@ -67,8 +67,6 @@ python ATLAS_SCRIPT --session SESSION_FILE refresh
 资源导出按同样规则保存资源包与 `agent-skills/<id>/` 下的 skill 快照；`--code-only` 仍按下面的扩展名白名单筛选，未下载文件保留在清单中。
 
 `--code-only` 仅下载扩展名属于 `.html`、`.htm`、`.js`、`.mjs`、`.cjs`、`.css`、`.json`、`.md`、`.txt`、`.svg`、`.glsl`、`.frag`、`.vert`、`.wgsl`、`.xml`、`.csv` 的代码与文本文件，扩展名不区分大小写；其余文件记录在 `notDownloaded`，每项含 `path` 与 `bytes`。未带该参数时下载全部文件，`notDownloaded` 为空数组。图片、音频、字体等依赖可能因此未下载，运行前按清单补齐。
-
-这与上游 `scripts/atlas.mjs --code-only` 的语义不同：上游仍复制全部 Demo 文件，只省略额外生成的 `PROMPT.md`、`README.md`、`entry.json`；本 skill 按上述扩展名白名单筛选下载。
 
 导出后从根目录启动静态 HTTP 服务器，打开清单的实际入口；带地图、字体和异步资源的 Demo 不用 `file://` 代替运行验证：
 

@@ -12,7 +12,7 @@
 - `support`：支撑，承担一个区域的交互或信息。
 - `accent`：点睛，短时、局部的强调，同一时刻不超过两个。
 
-先定骨架，再给支撑与点睛分配清楚的区域、时段和职责。逐项检查 `composition.pairsWellWith`、`composition.conflicts`、`composition.notes`；这些关系不能替代当前内容下的验证。
+先定骨架，再给支撑与点睛分配清楚的区域、时段和职责。逐项检查 `composition.pairsWellWith`、`composition.conflicts`、`composition.notes`。
 检查骨架是否唯一、点睛是否争抢注意力、触发条件和时间轴是否冲突。多个全屏状态、强镜头运动与高密度信息层同时出现时，说明取舍并减少竞争；画面和声音共用节拍表。
 
 ## Prompt 三段
