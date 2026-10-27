@@ -47,6 +47,29 @@ $motion-atlas 参考 archive-os，为我的展会做一个固定画幅、可以�
 $motion-atlas 这段片头"太拖了，不够燃"，帮我改。
 ```
 
+## 精简审查 Skill（lean-audit）
+
+`$lean-audit` 处理 Agent 的过度设计与过度防御：顺手加的测试和哈希、走不到的兜底分支、文档里的免责句和讨论过程、为一个案例搭的抽象。只在点名时运行，有两种用法：
+
+| 用法 | 做什么 |
+| --- | --- |
+| 初始化 | 扫描当前电脑上 Codex、Claude Code、Gemini CLI 和项目里的指令、配置、记忆与技能，列出诱发多做的写法和会自动触发的相关技能，由你逐项决定修改，再把精简原则写入全局指令。 |
+| 完成审查 | 开发完成后扫描这次改动，列出计划外的文件、测试与哈希代码、兜底分支、免责句和重复说明，由你决定删除。 |
+
+[阅读技能正文](skills/lean-audit/SKILL.md)。判断标准集中在 [规则](skills/lean-audit/references/rules.md)；`scripts/scan_env.py` 与 `scripts/scan_diff.py` 只用 Python 标准库，只读，输出 JSON 供 Agent 判断。
+
+```text
+请使用 $skill-installer，从 MIBXR/mibxr-skills 的 main 分支安装
+skills/lean-audit。
+如果已经安装同名技能，先保留本地修改，再更新。
+```
+
+```text
+$lean-audit 初始化，检查我现在的 Agent 配置。
+$lean-audit 开发完了，按 issue #12 检查这个分支有没有多做。
+$lean-audit 检查 main..HEAD 的改动，docs/vendor/ 是原样复制进来的。
+```
+
 ## 桌宠制作与交付 Skill
 
 一个技能覆盖桌宠及其展示网站，按任务读取需要的经验。

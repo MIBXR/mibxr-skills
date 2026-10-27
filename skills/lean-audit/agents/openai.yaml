@@ -1,0 +1,6 @@
+interface:
+  display_name: "Lean Audit 精简审查"
+  short_description: "审查 Agent 配置中诱发过度设计的写法，开发完成后找出改动里超出计划的部分"
+  default_prompt: "请使用 $lean-audit 初始化：扫描当前 Agent 的指令、配置、记忆与技能，列出诱发过度设计的写法供我逐项决定，并写入全局约束块。"
+policy:
+  allow_implicit_invocation: false
