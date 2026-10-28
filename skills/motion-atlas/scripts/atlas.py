@@ -20,8 +20,6 @@ CODE_EXTENSIONS = {
     '.html', '.htm', '.js', '.mjs', '.cjs', '.css', '.json', '.md', '.txt', '.svg',
     '.glsl', '.frag', '.vert', '.wgsl', '.xml', '.csv',
 }
-RESOURCES_UNAVAILABLE = ('This pinned Atlas version has no resources library. '
-                         'Use --session SESSION_FILE refresh, a newer --ref, or an updated --local-root to access resources.')
 
 
 class AtlasError(Exception):
@@ -105,7 +103,7 @@ class Atlas:
         self.catalog = parse_json(self.read(lock["catalog"]), lock["catalog"])
         self.entries = {
             entry['id']: {**entry, 'kind': kind}
-            for kind in ('cases', 'patterns', 'resources') for entry in self.catalog.get(kind, [])
+            for kind in ('cases', 'patterns', 'resources') for entry in self.catalog[kind]
         }
         if self.session and (saved_session is None or args.command == 'refresh'):
             self.write_session(replace=saved_session is not None)
@@ -189,14 +187,9 @@ class Atlas:
 
     def bundle(self, entry_id):
         if entry_id not in self.entries:
-            self.require_resources()
             raise AtlasError(f"Unknown case, pattern or resource ID: {entry_id}")
         path = self.entries[entry_id]['bundle']
         return parse_json(self.read(path), path)
-
-    def require_resources(self):
-        if 'resources' not in self.catalog:
-            raise AtlasError(RESOURCES_UNAVAILABLE)
 
 
 def emit(value):
@@ -216,10 +209,6 @@ def query_terms(query):
 
 
 def search(atlas, args):
-    if args.kind == 'resources':
-        atlas.require_resources()
-    elif not args.kind and 'resources' not in atlas.catalog:
-        print(f'motion-atlas: {RESOURCES_UNAVAILABLE}', file=sys.stderr)
     terms = query_terms(args.query)
     taxonomy = atlas.catalog['taxonomy']
     results = []
@@ -356,10 +345,8 @@ def main():
         else:
             result = {
                 'provenance': atlas.provenance(), 'caseCount': len(atlas.catalog['cases']),
-                'patternCount': len(atlas.catalog['patterns']),
+                'patternCount': len(atlas.catalog['patterns']), 'resourceCount': len(atlas.catalog['resources']),
             }
-            if 'resources' in atlas.catalog:
-                result['resourceCount'] = len(atlas.catalog['resources'])
             if args.command == 'refresh':
                 result.update({'previousRef': atlas.previous_ref, 'refChanged': atlas.previous_ref != atlas.ref})
             emit(result)
