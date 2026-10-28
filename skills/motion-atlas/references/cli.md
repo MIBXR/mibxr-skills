@@ -44,11 +44,11 @@ export ID --out NEW_DIR [--code-only]
 
 ## SHA、离线与刷新
 
-`info` 显示当前上游信息、案例数与巧思数；版本支持资源库时也显示资源数。无会话时读取最新默认分支；已有会话时复用其 SHA。`--ref` 只接受完整 40 位 Git commit，不接受分支名或短 SHA；已有会话与显式 ref 不同会报错，复现另一提交时使用独立会话。
+`info` 显示当前上游信息与案例、巧思、资源数。无会话时读取最新默认分支；已有会话时复用其 SHA。`--ref` 只接受完整 40 位 Git commit，不接受分支名或短 SHA；已有会话与显式 ref 不同会报错，复现另一提交时使用独立会话。
 
 ```bash
 python ATLAS_SCRIPT info
-python ATLAS_SCRIPT --ref 4f19df47759399f76b6b5cba0c687663bacb0dae search "" --limit 100
+python ATLAS_SCRIPT --ref b220ee2b11949724111b77800c6dad56a07a8262 search "" --limit 100
 python ATLAS_SCRIPT --local-root C:/Users/mibxr/Code/MIBXR/motion-atlas info
 python ATLAS_SCRIPT --local-root C:/Users/mibxr/Code/MIBXR/motion-atlas search "转场" --kind patterns
 python ATLAS_SCRIPT --session SESSION_FILE refresh
@@ -59,7 +59,6 @@ python ATLAS_SCRIPT --session SESSION_FILE refresh
 默认分支解析失败会报错；已有会话、显式 `--ref` 与离线 `--local-root` 分别可用。
 
 `upstream.lock.json` 保存仓库、目录路径、schema 版本与已验证基线；基线不限制默认发现新增条目。当前 Agent catalog 和资料包的 schemaVersion 为 1，读取 `agent/catalog.json`、`agent/cases/<id>.json`、`agent/patterns/<id>.json` 与 `agent/resources/<id>.json`；资源目录为 `agent/resources.json`。
-旧版本没有资源库时，`search --kind resources` 或读取未知资源 ID 会给出明确提示，建议刷新会话、使用更新的 `--ref` 或更新本地仓库；不限定 `--kind` 的检索会提示资源库不可用，并继续返回案例与巧思。
 
 ## 导出与运行
 

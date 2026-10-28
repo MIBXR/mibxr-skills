@@ -58,7 +58,7 @@ description: 为按时间线播放的作品剖析需求、选择并组合动效�
 
 - `render(t)` 的画面只依赖 `t`，不读墙上时钟或累加上一帧状态；随机数用 seed 并按 `t` 派生，异步资源让 render 返回 Promise，取帧等待完成。
 - 可交互作品采用“事件列表推导状态 + 自动驾驶时间轴”：真实输入切到实时时钟，外部 `seek`／`play` 回到自动驾驶。
-- 迁移时改作品本身，按真实内容适配，保留 `window.__motion` 协议：案例的作品代码在 `film/`；时间纯函数作品的时长、节拍标记与音轨在根 `index.html` 的 `MotionKit.mountFilm` 配置里，自有时钟的作品改 `film/` 内的配置；重放型巧思改 `index.html` 里 `MotionKit.replay` 的片段，拆分型巧思改顶部 `CONFIG`。
+- 按用户内容改造 Demo 时改作品本身，按真实内容适配，保留 `window.__motion` 协议：案例的作品代码在 `film/`；时间纯函数作品的时长、节拍标记与音轨在根 `index.html` 的 `MotionKit.mountFilm` 配置里，自有时钟的作品改 `film/` 内的配置；重放型巧思改 `index.html` 里 `MotionKit.replay` 的片段，拆分型巧思改顶部 `CONFIG`。
 - 遵守 `prefers-reduced-motion`；声音默认关闭。
 - 参考视频的取帧结果和渲染帧留在工作区，不提交。
 
