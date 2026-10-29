@@ -466,7 +466,7 @@ def main():
     pattern_save.add_argument('pattern_id')
     pattern_save.add_argument('--out', required=True)
     pattern_save.add_argument('--code-only', action='store_true', help='Download source/context and explicitly list omitted media')
-    material_find = commands.add_parser('material-search', help='Search content resources and their runnable examples')
+    material_find = commands.add_parser('material-search', help='Search content materials and their runnable examples')
     material_find.add_argument('query', nargs='?', default='')
     material_find.add_argument('--category', help='Exact material category filter')
     material_find.add_argument('--type', help='Exact resource type filter, such as component-library or font')
