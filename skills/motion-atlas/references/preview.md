@@ -29,7 +29,7 @@ python -m http.server 4331 --bind 127.0.0.1 --directory "$PREVIEW_ROOT"
 
 时间驱动作品通过 `MotionKit.expose(tl)` 提供 `window.__motion`：
 
-- `duration`、`markers`、`time`、`playing`；`ready` 是预加载 Promise。
+- `duration`、`markers`、`time`、`playing`；`ready` 在全部资源（图片、字体、模型、音轨、帧序列、地图瓦片）加载完成后兑现。
 - `seek(t)` 返回 Promise，等待 `render(t)` 的异步工作；`pause()` 停止播放，`play()` 开始播放。
 - `orient`、`orients` 与 `setOrient(o)`；后者返回 Promise。`orients=[]` 表示没有固定画幅舞台。
 - 挂了乐谱时，`audio.renderWav({ from, to, sampleRate })` 离线输出 WAV 数据；否则 `audio=null`。
@@ -88,9 +88,9 @@ ffprobe -v error -select_streams v:0 -count_frames -show_entries stream=width,he
 
 ## 资源与完成状态
 
-`map-pilgrimage` 依赖外部 MapLibre、OpenFreeMap 与地形瓦片；默认卡片画面由 `scenes.js` 生成。地图不可用时 Demo 会退回纸面网格，预加载失败或瓦片等待超时后 `ready`／`seek` 也可能完成。取帧后目视地图与主要元素已经加载；地图缺失时 `#stage` 含 `no-map`，修复网络或路径后重跑受影响的步骤。
+`map-pilgrimage` 依赖外部 MapLibre、OpenFreeMap 与地形瓦片；默认卡片画面由 `scenes.js` 生成。任一资源加载失败时页面显示错误与重试，`ready` 不兑现；修复网络或路径后重跑受影响的步骤。
 
-截图工具对 `ready` 的等待为 60 秒，Demo 的预加载上限为 120 秒。慢网导致前者超时时，先检查资源；需要更长等待时在用户项目的无头浏览器中等待 `ready`，再 `await seek(t)` 截图，保留实际等待和未就绪状态，不改只读上游脚本。
+截图工具对 `ready` 的等待为 60 秒；Demo 中单个资源 60 秒没有新数据即判为下载超时。慢网导致前者超时时，先检查资源；需要更长等待时在用户项目的无头浏览器中等待 `ready`，再 `await seek(t)` 截图，保留实际等待和未就绪状态，不改只读上游脚本。
 
 ## 选定方向后正式渲染
 
