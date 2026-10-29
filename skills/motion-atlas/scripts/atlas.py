@@ -103,7 +103,7 @@ class Atlas:
         self.catalog = parse_json(self.read(lock["catalog"]), lock["catalog"])
         self.entries = {
             entry['id']: {**entry, 'kind': kind}
-            for kind in ('cases', 'patterns', 'resources') for entry in self.catalog[kind]
+            for kind in ('cases', 'patterns', 'materials') for entry in self.catalog[kind]
         }
         if self.session and (saved_session is None or args.command == 'refresh'):
             self.write_session(replace=saved_session is not None)
@@ -187,7 +187,7 @@ class Atlas:
 
     def bundle(self, entry_id):
         if entry_id not in self.entries:
-            raise AtlasError(f"Unknown case, pattern or resource ID: {entry_id}")
+            raise AtlasError(f"Unknown case, pattern or material ID: {entry_id}")
         path = self.entries[entry_id]['bundle']
         return parse_json(self.read(path), path)
 
@@ -309,17 +309,17 @@ def main():
     parser.add_argument('--ref', help='Retrieve an explicit full 40-character Git commit for reproduction')
     parser.add_argument('--session', help="Pin this workflow's resolved commit in a JSON file in the user's working directory")
     commands = parser.add_subparsers(dest='command', required=True)
-    find = commands.add_parser('search', help='Search case, pattern and resource metadata by keywords')
+    find = commands.add_parser('search', help='Search case, pattern and material metadata by keywords')
     find.add_argument('query', nargs='?', default='')
-    find.add_argument('--kind', choices=('cases', 'patterns', 'resources'), help='Entry kind filter')
+    find.add_argument('--kind', choices=('cases', 'patterns', 'materials'), help='Entry kind filter')
     find.add_argument('--carrier', choices=('video', 'console'), help='Carrier filter')
     find.add_argument('--type', help='Exact pattern type filter from the catalog taxonomy')
     find.add_argument('--limit', type=int, default=5)
     find.add_argument('--offset', type=int, default=0, help='Skip this many ranked results; continue until hasMore is false')
-    detail = commands.add_parser('show', help='Read a case, pattern or resource bundle and optionally full source')
+    detail = commands.add_parser('show', help='Read a case, pattern or material bundle and optionally full source')
     detail.add_argument('entry_id')
     detail.add_argument('--source', action='store_true')
-    save = commands.add_parser('export', help='Download a case, pattern or resource into a new directory')
+    save = commands.add_parser('export', help='Download a case, pattern or material into a new directory')
     save.add_argument('entry_id')
     save.add_argument('--out', required=True)
     save.add_argument('--code-only', action='store_true', help='Download only code/text extensions and list other files in notDownloaded')
@@ -345,7 +345,7 @@ def main():
         else:
             result = {
                 'provenance': atlas.provenance(), 'caseCount': len(atlas.catalog['cases']),
-                'patternCount': len(atlas.catalog['patterns']), 'resourceCount': len(atlas.catalog['resources']),
+                'patternCount': len(atlas.catalog['patterns']), 'materialCount': len(atlas.catalog['materials']),
             }
             if args.command == 'refresh':
                 result.update({'previousRef': atlas.previous_ref, 'refChanged': atlas.previous_ref != atlas.ref})
