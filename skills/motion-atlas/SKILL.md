@@ -30,7 +30,7 @@ description: 为按时间线播放的作品剖析需求、选择并组合动效�
 ## 第 4 步　检索收敛
 
 按简报在库里找能成立的方向；检索命令、会话与 SHA 见 [references/cli.md](references/cli.md)。不满足简报的候选剔除，原因记进简报的“已排除”栏，不展示给用户。
-资源库里的 skill 可以作为实现手段。选用时读取它的工作流和原文，并在简报中记录。
+素材库里的 skill 可以作为实现手段。选用时读取它的工作流和原文，并在简报中记录。
 组合前读 [references/selection.md](references/selection.md)：`foundation` 是骨架，一个作品通常只有一个；`support` 承担区域职责；`accent` 是点睛，同一时刻不超过两个。检查 `pairsWellWith`、`conflicts` 和组合说明。
 
 ## 第 5 步　出对照
