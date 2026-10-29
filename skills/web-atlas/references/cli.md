@@ -40,7 +40,7 @@ python ATLAS_SCRIPT --session SESSION_FILE material-export MATERIAL_ID --out NEW
 python ATLAS_SCRIPT --session SESSION_FILE refresh
 ```
 
-刷新解析默认分支的新 Git 提交，读取该版本的案例目录后替换会话；失败保留原会话。各命令只读取对应目录和实际取用的内容，巧思取材同时读取其来源案例。无需会话的 `info` 查看当前最新版本及各目录的数量。默认解析失败会明确报错；已有会话、`--ref FULL_COMMIT` 复现模式及 `--local-root CHECKOUT` 离线模式各自可用。后两种模式的全局参数也放在子命令前。旧版本仍支持已有命令；缺少巧思或素材目录、体验类型时工具提示刷新或选择新版。无类型标注的旧巧思仍可读取、导出和不带 `--type` 检索，检索输出中的空 `experienceTypes` 表示未分类。`upstream.lock.json` 保存上游配置和已验证基线，基线不限制默认发现新增内容。
+刷新解析默认分支的新 Git 提交，读取该版本的案例目录后替换会话；失败保留原会话。各命令只读取对应目录和实际取用的内容，巧思取材同时读取其来源案例。无需会话的 `info` 查看当前最新版本及各目录的数量。默认解析失败会明确报错；已有会话、`--ref FULL_COMMIT` 复现模式及 `--local-root CHECKOUT` 离线模式各自可用。后两种模式的全局参数也放在子命令前。`upstream.lock.json` 保存上游配置和已验证基线，基线不限制默认发现新增内容。
 
 ## 取得完整材料与预览
 
@@ -48,4 +48,4 @@ python ATLAS_SCRIPT --session SESSION_FILE refresh
 
 ## 直接读取入口
 
-[Agent 协议说明](https://github.com/MIBXR/web-atlas/blob/master/AGENT.md) 与 `agent/catalog.json`、`agent/cases/<id>.json`、`agent/patterns.json`、`agent/patterns/<id>.json`、`agent/materials.json`、`agent/materials/<id>.json` 提供直接读取入口。
+[Agent 取材说明](https://github.com/MIBXR/web-atlas/blob/master/docs/agent.md) 与 `agent/catalog.json`、`agent/cases/<id>.json`、`agent/patterns.json`、`agent/patterns/<id>.json`、`agent/materials.json`、`agent/materials/<id>.json` 提供直接读取入口。

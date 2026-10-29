@@ -193,9 +193,7 @@ class Atlas:
 
     def require_materials(self):
         if self.materials is None:
-            manifest = self.catalog.get('materials')
-            if not manifest:
-                raise AtlasError('This pinned Atlas version has no content materials library. Use --session SESSION_FILE refresh, a newer --ref, or an updated --local-root to access material commands.')
+            manifest = self.catalog['materials']
             catalog = parse_json(self.read(manifest['path']), manifest['path'])
             self.materials = {row['id']: row for row in catalog['materials']}
 
@@ -208,9 +206,7 @@ class Atlas:
 
     def require_patterns(self):
         if self.patterns is None:
-            manifest = self.catalog.get('patterns')
-            if not manifest:
-                raise AtlasError('This pinned Atlas version has no design patterns library. Use --session SESSION_FILE refresh, a newer --ref, or an updated --local-root to access pattern commands.')
+            manifest = self.catalog['patterns']
             catalog = parse_json(self.read(manifest['path']), manifest['path'])
             self.patterns = {row['id']: row for row in catalog['patterns']}
 
@@ -285,15 +281,13 @@ def show(atlas, args):
 
 def pattern_search(atlas, args):
     atlas.require_patterns()
-    if args.type and not any('experienceTypes' in pattern for pattern in atlas.patterns.values()):
-        raise AtlasError('This pinned Atlas version has no experience type classifications. Use --session SESSION_FILE refresh, a newer --ref, or an updated --local-root to filter by --type.')
     terms = list(dict.fromkeys(term.casefold() for term in re.split(r'[\s,，;；]+', args.query) if term))
     fields = ['id', 'title', 'category', 'experienceTypes', 'summary', 'mechanism', 'trigger', 'effect', 'useCases', 'avoid', 'constraints', 'composition', 'accessibility', 'parameters', 'sources', 'sourceCases']
     results = []
     for pattern in atlas.patterns.values():
         if args.category and pattern['category'].casefold() != args.category.casefold():
             continue
-        if args.type and args.type not in pattern.get('experienceTypes', []):
+        if args.type and args.type not in pattern['experienceTypes']:
             continue
         case_ids = sorted({source['caseId'] for source in pattern['sources']})
         if args.case and args.case not in case_ids:
@@ -307,7 +301,7 @@ def pattern_search(atlas, args):
             continue
         score = sum(4 if field in {'id', 'title', 'useCases', 'mechanism'} else 1 if field in {'avoid', 'constraints'} else 2 for match in matches for field in match['fields'])
         result = {key: pattern[key] for key in ('id', 'title', 'category', 'summary', 'trigger', 'effect', 'useCases', 'avoid', 'constraints', 'composition', 'accessibility', 'sources', 'sourceFiles', 'paths')}
-        result.update({'experienceTypes': pattern.get('experienceTypes', []), 'sourceCases': source_cases, 'score': score, 'matches': matches})
+        result.update({'experienceTypes': pattern['experienceTypes'], 'sourceCases': source_cases, 'score': score, 'matches': matches})
         results.append(result)
     results.sort(key=lambda row: (-row['score'], row['id']))
     emit({'schemaVersion': 1, 'provenance': atlas.provenance(), 'query': args.query, 'filters': {'category': args.category, 'type': args.type, 'case': args.case}, 'method': 'keyword', 'total': len(results), 'offset': args.offset, 'limit': args.limit, 'hasMore': args.offset + args.limit < len(results), 'results': results[args.offset:args.offset + args.limit]})
@@ -517,7 +511,7 @@ def main():
         elif args.command == 'material-export':
             material_export(atlas, args)
         else:
-            result = {"provenance": atlas.provenance(), "entryCount": len(atlas.entries), 'patternCount': atlas.catalog.get('patterns', {}).get('patternCount'), 'materialCount': atlas.catalog.get('materials', {}).get('materialCount')}
+            result = {"provenance": atlas.provenance(), "entryCount": len(atlas.entries), 'patternCount': atlas.catalog['patterns']['patternCount'], 'materialCount': atlas.catalog['materials']['materialCount']}
             if args.command == 'refresh':
                 result.update({'previousRef': atlas.previous_ref, 'refChanged': atlas.previous_ref != atlas.ref})
             emit(result)
