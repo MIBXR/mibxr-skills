@@ -1,7 +1,7 @@
 {
   "repository": "MIBXR/web-atlas",
   "default": "latest-default-branch",
-  "baselineRef": "8295a6b295d207b77c724da8d3bcba114d19a92b",
+  "baselineRef": "04ab52daea36f20342d7ba0b11874f6d6d5ad321",
   "catalog": "agent/catalog.json",
   "schemaVersion": 1
 }
