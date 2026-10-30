@@ -39,7 +39,7 @@ export ID --out NEW_DIR [--code-only]
 - `--limit` 为 1–100；`--offset` 为非负整数。`hasMore=true` 时保持查询、过滤与会话不变，将 offset 增加本页 limit 后继续，直到 `hasMore=false`。
 - 中文和英文关键词用于检索标题、摘要、标签等内容，排序分数只用于召回排序，是否适用仍按简报判断。
 
-`show ID` 返回完整案例或巧思资料包、Prompt、入口、文件清单和上游信息；`--source` 再读取 Demo 的 HTML／CSS／JS 源码，排除共享的 `motion-kit.js`。来源案例的读取与使用见 [selection.md](selection.md)。
+`show ID` 返回完整案例或巧思资料包、Prompt、入口、文件清单和上游信息；`--source` 再读取 Demo 的 HTML／CSS／JS／TS 源码，排除共享的 `motion-kit.js`；`vendor/` 下的第三方库与超过 256 KB 的文件（如打包产物）只列在 `sourceSkipped`，需要时用 `export` 取得。来源案例的读取与使用见 [selection.md](selection.md)。
 素材 ID 返回素材包，包含完整条目、工作流、skill 原文、README 与快照文件清单；选用前读取原文和许可。
 
 ## SHA、离线与刷新
