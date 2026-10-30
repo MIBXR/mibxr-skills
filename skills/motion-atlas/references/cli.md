@@ -48,7 +48,7 @@ export ID --out NEW_DIR [--code-only]
 
 ```bash
 python ATLAS_SCRIPT info
-python ATLAS_SCRIPT --ref 2f63ac64f5c5d31f58d516f1794e1da964179ec6 search "" --limit 100
+python ATLAS_SCRIPT --ref 6d96a02d8014b49280f682b0edd79cf750bd80e5 search "" --limit 100
 python ATLAS_SCRIPT --local-root C:/Users/mibxr/Code/MIBXR/motion-atlas info
 python ATLAS_SCRIPT --local-root C:/Users/mibxr/Code/MIBXR/motion-atlas search "转场" --kind patterns
 python ATLAS_SCRIPT --session SESSION_FILE refresh
