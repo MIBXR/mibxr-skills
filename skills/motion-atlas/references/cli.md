@@ -58,12 +58,12 @@ python ATLAS_SCRIPT --session SESSION_FILE refresh
 `refresh` 必须带 `--session`，不与 `--ref` 或 `--local-root` 同用。它重新解析默认分支提交，读取成功后替换会话；失败保留原会话。刷新后同一任务的材料都取自新的 SHA。
 默认分支解析失败会报错；已有会话、显式 `--ref` 与离线 `--local-root` 分别可用。
 
-`upstream.lock.json` 保存仓库、目录路径、schema 版本与已验证基线；基线不限制默认发现新增条目。当前 Agent catalog 和资料包的 schemaVersion 为 1，读取 `agent/catalog.json`、`agent/cases/<id>.json`、`agent/patterns/<id>.json` 与 `agent/materials/<id>.json`；素材目录为 `agent/materials.json`。
+`upstream.lock.json` 保存仓库、目录路径、schema 版本与已验证基线；基线不限制默认发现新增条目。当前 Agent catalog 和资料包的 schemaVersion 为 1，读取 `agent/catalog.json`、`agent/cases/<id>.json`、`agent/patterns/<id>.json` 与 `agent/materials/<id>.json`；素材索引为 `agent/materials/index.json`。
 
 ## 导出与运行
 
 `export ID --out NEW_DIR` 按资料包 `files[]` 下载全部文件，保留仓库相对目录，目标目录必须不存在。根目录的 `atlas-export.json` 保留完整资料包 `bundle`（含 `documents.prompt`）、入口 `entrypoint`、上游信息 `provenance`、实际下载清单 `files`、未下载清单 `notDownloaded` 以及 `codeOnly` 标记；不额外生成根级 `PROMPT.md`、`README.md` 或 `entry.json`。
-素材导出按同样规则保存素材包与 `agent-skills/<id>/` 下的 skill 快照；`--code-only` 仍按下面的扩展名白名单筛选，未下载文件保留在清单中。
+素材导出按资料包清单保存 `demos/materials/<id>/` 下的完整原文快照；`--code-only` 按下面的扩展名白名单筛选，未下载文件保留在清单中。
 
 `--code-only` 仅下载扩展名属于 `.html`、`.htm`、`.js`、`.mjs`、`.cjs`、`.css`、`.json`、`.md`、`.txt`、`.svg`、`.glsl`、`.frag`、`.vert`、`.wgsl`、`.xml`、`.csv` 的代码与文本文件，扩展名不区分大小写；其余文件记录在 `notDownloaded`，每项含 `path` 与 `bytes`。未带该参数时下载全部文件，`notDownloaded` 为空数组。图片、音频、字体等依赖可能因此未下载，运行前按清单补齐。
 

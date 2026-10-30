@@ -45,9 +45,9 @@ $web-atlas 为我的产品页挑选首屏聚焦与加载反馈的巧思，跨案
 
 `$motion-atlas` 把 [Motion Atlas](https://github.com/MIBXR/motion-atlas) 接入时间线作品任务：先读现场、写简报，只补问会改变决定的问题，复述理解后检索收敛，再用关键帧条与短片段对照 2–3 个有差异的方向，拆解用户反应后定稿、取材、实现并逐帧出片。用于影像视频和按时间线播放、带自动驾驶时间轴的交互操作台与展示台。
 
-本仓库只保存工作流、检索脚本与上游配置。案例、巧思、节拍表、Prompt 与可逐帧渲染的 Demo 由 `MIBXR/motion-atlas` 维护；完整取材保留条目、Prompt、入口与文件清单。
+本仓库只保存工作流、检索脚本与上游配置。案例、巧思、素材、节拍表、Prompt 与可逐帧渲染的 Demo 由 `MIBXR/motion-atlas` 维护；完整取材保留条目、Prompt、入口与文件清单。
 
-[阅读技能正文](skills/motion-atlas/SKILL.md)。检索脚本的会话与版本用法和 web-atlas 相同，可按案例／巧思、载体和类型过滤并完整分页；参数及示例见 [CLI 参考](skills/motion-atlas/references/cli.md)。
+[阅读技能正文](skills/motion-atlas/SKILL.md)。检索脚本的会话与版本用法和 web-atlas 相同，可按案例／巧思／素材、载体和类型过滤并完整分页；参数及示例见 [CLI 参考](skills/motion-atlas/references/cli.md)。
 
 ```text
 $motion-atlas 我需要一支 30 秒的产品发布片头，放在发布会大屏上，不知道该做成什么风格。

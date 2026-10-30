@@ -2,9 +2,9 @@
 
 每次只问一到两条；先从项目现场、现有成片、品牌资料和用户原话推断，推断不出来且会改变决定的才问。用户答不出就采用默认值，并在简报中标为“推断”，不把默认值记成事实。
 
-依据中的 Motion Atlas 案例或巧思 ID 可用 `show ID` 查看；`mg-styles-15:`、`video-shotcraft:` 开头的条目无需读取。
+依据中的 Motion Atlas 案例或巧思 ID 可用 `show ID` 查看。
 
-问题按影响的具体决定数量排序；可以一题写入多个简报字段。案例数值是条目记录或提示词要求，未通过观看视频、图片或听音实测。
+问题按影响的具体决定数量排序；可以一题写入多个简报字段。案例数值来自条目记录或提示词要求。
 
 ### Q1　谁会看，在哪看，看完要记住或做到什么？
 
@@ -12,7 +12,7 @@
 - 为什么问：它会改变 8 项决定：叙事主线、第一镜头、信息优先级、术语深度、主体尺度、结束画面、行动提示、播放方式。
 - 默认值：面向不了解项目的普通观众；先记住一个核心信息，再决定是否进一步了解。播放地点沿用现场已有渠道。
 - 写入简报：受众；目的；播放场景（社媒、投屏、展会循环、操作台）
-- 依据：map-pilgrimage、archive-os、mg-styles-15:19-paperclip、mg-styles-15:02-line-art
+- 依据：map-pilgrimage、archive-os、mg-paperclip、mg-line-art
 
 ### Q2　观众只看一遍，还是要自己动手？
 
@@ -28,7 +28,7 @@
 - 为什么问：它会改变 6 项决定：段落数量、镜头承接、章节标记、高光位置、高光前停顿、结尾回落。
 - 默认值：只保留一条主线；开头交代、中间一个高光、结尾留读，不平均堆满高潮。
 - 写入简报：叙事结构与能量曲线
-- 依据：map-pilgrimage、mg-styles-15:02-line-art、mg-styles-15:08-morph、mg-styles-15:03-isometric
+- 依据：map-pilgrimage、mg-line-art、mg-morph、mg-isometric
 
 ### Q4　哪些内容必须保留，哪些绝不能用？
 
@@ -36,7 +36,7 @@
 - 为什么问：它会改变 6 项决定：字体、配色、材质、必现内容、素材获取方式、可用转场。记录不能用的方向及理由。
 - 默认值：保留现场已有品牌名、字体、主色和真实内容；未确认可用的第三方素材不纳入方向。
 - 写入简报：品牌与素材约束；已排除的方向及原因
-- 依据：archive-os、map-pilgrimage、mg-styles-15:06-collage、mg-styles-15:04-3d-render、video-shotcraft:references/pipeline.md
+- 依据：archive-os、map-pilgrimage、mg-collage、mg-3d-render
 
 ### Q5　多长时间内让人看懂？
 
@@ -44,7 +44,7 @@
 - 为什么问：它会改变 5 项决定：总时长、镜头数、开场预算、每段停留、结尾阅读时间。
 - 默认值：有现成长度就沿用；完全未知先按 10 秒单主题做关键段草样，长度记为工作假设，避免用整体加速解决超时。
 - 写入简报：时长；叙事结构与能量曲线
-- 依据：archive-os、map-pilgrimage、mg-styles-15:01-flat-vector、mg-styles-15:07-liquid
+- 依据：archive-os、map-pilgrimage、mg-flat-vector、mg-liquid
 
 ### Q6　主要横着看、竖着看，还是两版？
 
@@ -52,7 +52,7 @@
 - 为什么问：它会改变 4 项决定：构图、文字安全区、主体取景、横竖重排。
 - 默认值：沿用已有播放渠道；渠道未知先横屏1920×1080，需要双版时分别构图。
 - 写入简报：画幅（横、竖、双版）；播放场景（社媒、投屏、展会循环、操作台）
-- 依据：map-pilgrimage、mg-styles-15:18-hanazi、mg-styles-15:01-flat-vector、mg-styles-15:20-pixel
+- 依据：map-pilgrimage、mg-hanazi、mg-flat-vector、mg-pixel
 
 ### Q7　能听声音吗，想听音乐还是提示音？
 
@@ -60,7 +60,7 @@
 - 为什么问：它会改变 4 项决定：节拍对齐、提示音粒度、文字停顿、静音下的信息补偿。
 - 默认值：画面在静音时也能看懂；可交互演示默认静音，用户开启后再听音乐和必要事件音。
 - 写入简报：声音（有无、音乐还是音效）；播放场景（社媒、投屏、展会循环、操作台）
-- 依据：map-pilgrimage、mg-styles-15:02-line-art、mg-styles-15:10-synthwave、mg-styles-15:07-liquid、mg-styles-15:12-aurora-glass
+- 依据：map-pilgrimage、mg-line-art、mg-synthwave、mg-liquid、mg-aurora-glass
 
 ### Q8　内容要细看，还是扫一眼就懂？
 
@@ -68,7 +68,7 @@
 - 为什么问：它会改变 4 项决定：每屏文字量、字幕停留、信息更新方式、总览与详情分工。
 - 默认值：每屏一个主要信息；必须阅读的内容留读或允许暂停，不把长文逐字冲击。
 - 写入简报：受众；目的；叙事结构与能量曲线
-- 依据：mg-styles-15:19-paperclip、mg-styles-15:07-liquid、rolling-digits、vertical-title-blur、video-shotcraft:references/shots/typography/document-typewriter-reveal.md
+- 依据：mg-paperclip、mg-liquid、rolling-digits、vertical-title-blur
 
 ### Q9　用三个词说感受，并给喜欢讨厌的参考？
 
@@ -76,7 +76,7 @@
 - 为什么问：它会改变 4 项决定：基调候选、配色方向、运动性格、需要排除的表达。把参考里喜欢或讨厌的具体部分分别记下。
 - 默认值：先沿用用户原话和现场品牌；没有参考就记“未提供”，以“清楚、克制、有一个高光”为工作假设。
 - 写入简报：情绪基调（用户的原话）；喜欢和讨厌的参考；已排除的方向及原因
-- 依据：通用（plan §3.4“有没有你喜欢或讨厌的片子、片头或界面？”；三个感受词沿用同节体验提问方法）
+- 依据：用户原话中的喜恶与情绪词。
 
 ### Q10　哪些晃动或闪烁会让观众不舒服？
 
