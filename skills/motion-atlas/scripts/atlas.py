@@ -18,8 +18,9 @@ SKILL_ROOT = Path(__file__).resolve().parent.parent
 COMMIT = re.compile(r"^[0-9a-f]{40}$")
 CODE_EXTENSIONS = {
     '.html', '.htm', '.js', '.mjs', '.cjs', '.css', '.json', '.md', '.txt', '.svg',
-    '.glsl', '.frag', '.vert', '.wgsl', '.xml', '.csv',
+    '.glsl', '.frag', '.vert', '.wgsl', '.xml', '.csv', '.ts', '.tsx', '.jsx',
 }
+SOURCE_LIMIT = 256 * 1024
 
 
 class AtlasError(Exception):
@@ -247,16 +248,21 @@ def show(atlas, args):
     bundle = atlas.bundle(args.entry_id)
     result = {**bundle, 'provenance': atlas.provenance()}
     if args.source:
-        sources = []
+        sources, skipped = [], []
         for record in bundle['files']:
             path = record['path']
-            if re.search(r'\.(html|css|js)$', path) and not path.endswith('motion-kit.js'):
-                try:
-                    content = atlas.read(path).decode('utf-8')
-                except UnicodeError as exc:
-                    raise AtlasError(f'Source is not UTF-8: {path}') from exc
-                sources.append({**record, 'content': content})
+            if not re.search(r'\.(html|css|js|mjs|jsx|ts|tsx)$', path) or path.endswith('motion-kit.js'):
+                continue
+            if '/vendor/' in path or record['bytes'] > SOURCE_LIMIT:
+                skipped.append({'path': path, 'bytes': record['bytes']})
+                continue
+            try:
+                content = atlas.read(path).decode('utf-8')
+            except UnicodeError as exc:
+                raise AtlasError(f'Source is not UTF-8: {path}') from exc
+            sources.append({**record, 'content': content})
         result['source'] = sources
+        result['sourceSkipped'] = skipped
     emit(result)
 
 
