@@ -1,6 +1,6 @@
 ---
 name: motion-atlas
-description: 为按时间线播放的作品剖析需求、选择并组合动效参考：从 Motion Atlas 的影像与操作台案例和巧思中整理简报、给出有差异的对照方案（关键帧条与短片段）、取得 Demo 与 Prompt 并实现、逐帧渲染成片。用于片头、宣传片、数据短片、按时间线播放的交互操作台与展示台，用户说不清想要什么时也适用；网站与网页应用不适用。
+description: 为按时间线播放的作品剖析需求、选择并组合动效参考：从 Motion Atlas 的影像与操作台案例、巧思和素材中整理简报、给出有差异的对照方案（关键帧条与短片段）、取得 Demo 与 Prompt 并实现、逐帧渲染成片。用于片头、宣传片、数据短片、按时间线播放的交互操作台与展示台，用户说不清想要什么时也适用；网站与网页应用不适用。
 ---
 
 # Motion Atlas 影像与操作台参考
@@ -51,7 +51,7 @@ description: 为按时间线播放的作品剖析需求、选择并组合动效�
 
 ## 第 7 步　定稿、取材、实现、验证
 
-对最终采用的案例和巧思完整取材：`show ID --source`、`export ID --out NEW_DIR`（或 `--code-only`），用法见 [references/cli.md](references/cli.md)，Prompt 与组合细节见 [references/selection.md](references/selection.md)。
+对最终采用的案例、巧思和素材完整取材：`show ID --source`、`export ID --out NEW_DIR`（或 `--code-only`），用法见 [references/cli.md](references/cli.md)，Prompt 与组合细节见 [references/selection.md](references/selection.md)。
 同一任务的材料取自同一会话 SHA。
 
 实现时遵守：
@@ -64,7 +64,7 @@ description: 为按时间线播放的作品剖析需求、选择并组合动效�
 
 按项目方式运行并按 [references/preview.md](references/preview.md) 渲染：看关键时刻的截帧和成片时长是否对上节拍，所需的横竖构图各看一遍；有声音的实际播放一遍，交互作品实际操作一遍真实输入与自动驾驶的切换。
 
-交付时列出采用的案例／巧思 ID、各自职责和做了哪些适配，附选定方向的完整片段或约定的可交互作品。
+交付时列出采用的案例／巧思／素材 ID、各自职责和做了哪些适配，附选定方向的完整片段或约定的可交互作品。
 小任务（换一段转场、调整片尾停留）跳过第 5 步。简报只写一两行，第 3 步可以和交付说明合并。
 
 ## 通用界面约束

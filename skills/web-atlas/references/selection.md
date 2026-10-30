@@ -24,7 +24,7 @@
 
 ## 网页说明
 
-案例取材同时读取 `webNotes.content`：它是同一版本 `atlas.js` 详情页右侧说明的 HTML，覆盖设计机制、交互、约束、Tokens、Prompt 和来源证据。素材包提供 `webNotes` 时一并读取。
+案例取材同时读取 `webNotes.content`：它由同一版本 `site/pages/cases/atlas.js` 的详情渲染逻辑生成，内容为详情页右侧说明的 HTML，覆盖设计机制、交互、约束、Tokens、Prompt 和来源证据。素材包提供 `webNotes` 时一并读取。
 
 ## 实现适配
 

@@ -11,6 +11,7 @@ import re
 import subprocess
 import sys
 from collections import Counter, defaultdict
+from fnmatch import fnmatchcase
 from pathlib import Path
 
 CODE_FILE = re.compile(r"\.(m?js|cjs|jsx|tsx?|py|go|rs|rb|java|kt|swift|sh|ps1)$", re.I)
@@ -59,20 +60,33 @@ def under(path, prefixes):
 
 
 def changed_lines(repo, rng):
-    changed, cur = {}, None
+    changed, deleted, cur, in_hunk = {}, set(), None, False
     for line in git(repo, "diff", "-U0", rng or "HEAD").splitlines():
-        if line.startswith("+++ "):
+        if line.startswith("diff --git "):
+            cur, in_hunk = None, False
+        elif line.startswith("@@ "):
+            in_hunk = True
+        elif not in_hunk and line.startswith("+++ "):
             cur = None if line[4:] == "/dev/null" else re.sub(r"^b/", "", line[4:])
             if cur:
                 changed[cur] = []
-        elif cur and line.startswith("+"):
+        elif in_hunk and line.startswith("-"):
+            deleted.add(line[1:].strip())
+        elif in_hunk and cur and line.startswith("+"):
             changed[cur].append(line[1:])
     if not rng:
         for f in filter(None, git(repo, "ls-files", "--others", "--exclude-standard").splitlines()):
             p = Path(repo, f)
             if p.is_file() and p.stat().st_size < 2_000_000:
                 changed[f] = p.read_text(encoding="utf-8", errors="replace").splitlines()
-    return changed
+    return {f: [line for line in lines if line.strip() not in deleted] for f, lines in changed.items()}
+
+
+def same_files(paths):
+    if len(paths) == 1:
+        return paths[0]
+    copies = "、".join(paths[1:6]) + ("……" if len(paths) > 6 else "")
+    return f"{paths[0]}（另有 {len(paths) - 1} 份相同内容：{copies}）"
 
 
 def attr_skipped(repo, files):
@@ -93,24 +107,43 @@ def scan(repo, rng=None, files=(), verbatim=(), limit=80):
     if git(repo, "rev-parse", "--is-inside-work-tree").strip() != "true":
         raise SystemExit(f"不是 Git 仓库：{repo}")
     changed = changed_lines(repo, rng)
-    skipped = attr_skipped(repo, list(changed)) | {f for f in changed if SKIP_PATH.search(f) or under(f, verbatim)}
-    flags, strong, weak = [], [], []
+    skipped = attr_skipped(repo, list(changed)) | {
+        f for f in changed if SKIP_PATH.search(f) or under(f, verbatim) or any(fnmatchcase(f, p) for p in verbatim)
+    }
+    flags, strong, weak, contents = {}, {}, {}, {}
+
+    def add_hit(groups, label, path, detail=""):
+        if path not in contents:
+            if rng:
+                ref = rng.rsplit("..", 1)[-1]
+                contents[path] = subprocess.run(["git", "-C", repo, "show", f"{ref}:{path}"],
+                                                capture_output=True, check=True).stdout
+            else:
+                contents[path] = Path(repo, path).read_bytes()
+        key = (label, contents[path])
+        if key not in groups:
+            groups[key] = (label, [], detail)
+        if path not in groups[key][1]:
+            groups[key][1].append(path)
+
     idents = defaultdict(Counter)  # 说明文档正文里每个名称在各文件出现的次数
     for f, lines in changed.items():
+        if not lines:
+            continue
         if files and not under(f, files):
-            flags.append(f"计划外的文件：{f}")
+            add_hit(flags, "计划外的文件", f)
         if f in skipped:
             continue
         if TEST_FILE.search(f):
-            flags.append(f"测试文件：{f}")
+            add_hit(flags, "测试文件", f)
         elif CHECK_SCRIPT.search(f):
-            flags.append(f"检查脚本：{f}")
+            add_hit(flags, "检查脚本", f)
         lines = [l for l in lines if len(l) <= MINIFIED]  # 超长行多为压缩或内联数据
         if CODE_FILE.search(f):
             for name, rule in (("哈希", HASH), ("静默吞错", SWALLOW)):
                 hits = [l.strip()[:80] for l in lines if rule.search(l)]
                 if hits:
-                    flags.append(f"{name}：{f}（{len(hits)} 处）" + " | ".join(hits[:2]))
+                    add_hit(flags, name, f, f"（{len(hits)} 处）" + " | ".join(hits[:2]))
         doc = is_doc(f)
         if not (doc or PROSE_FILE.search(f)):
             continue
@@ -122,13 +155,16 @@ def scan(repo, rng=None, files=(), verbatim=(), limit=80):
             if fence or l.lstrip().startswith("|") or not l.strip():
                 continue
             if STRONG.search(l):
-                strong.append(f"{f}: {l.strip()[:160]}")
+                add_hit(strong, l.strip(), f)
             elif doc and WEAK.search(l):
-                weak.append(f"{f}: {l.strip()[:160]}")
+                add_hit(weak, l.strip(), f)
             if doc:
                 for k in IDENT.findall(l):
                     idents[k][f] += 1
 
+    flags = [f"{label}：{same_files(paths)}{detail}" for label, paths, detail in flags.values()]
+    strong = [f"{same_files(paths)}: {sentence[:160]}" for sentence, paths, _ in strong.values()]
+    weak = [f"{same_files(paths)}: {sentence[:160]}" for sentence, paths, _ in weak.values()]
     for k, per in idents.items():
         if sum(per.values()) >= 4:
             where = "、".join(f"{f}×{n}" for f, n in per.most_common())
@@ -136,7 +172,7 @@ def scan(repo, rng=None, files=(), verbatim=(), limit=80):
     review = strong + weak
     per_file = defaultdict(int)
     for x in review:
-        per_file[x.split(": ", 1)[0]] += 1
+        per_file[x.split(": ", 1)[0].split("（另有", 1)[0]] += 1
     return {
         "summary": {"files": len(changed), "skipped": len(skipped), "flags": len(flags),
                     "review": len(review), "review_strong": len(strong),
@@ -152,7 +188,7 @@ def main():
     ap.add_argument("--repo", default=".", help="仓库路径")
     ap.add_argument("--range", help="提交区间，如 main..HEAD；省略时扫描工作区")
     ap.add_argument("--files", default="", help="计划允许改动的路径，逗号分隔，目录以 / 结尾")
-    ap.add_argument("--verbatim", default="", help="原样收录的路径，内容不扫描")
+    ap.add_argument("--verbatim", default="", help="原样收录的路径前缀或 fnmatch 模式（含 **），逗号分隔，如 **/runtime.js,demos/*/source/**；内容不扫描")
     ap.add_argument("--limit", type=int, default=80, help="review 最多输出的条数（强信号在前）")
     a = ap.parse_args()
     split = lambda s: [x.strip() for x in s.split(",") if x.strip()]

@@ -2,7 +2,7 @@
 
 ## 工具从哪里来
 
-本 skill 的 `export` 按资料包的 `files[]` 取材；当前资料包只列 Demo 与预览文件，**不包含** `scripts/render.mjs`、`scripts/shot.mjs` 或其依赖。
+本 skill 的 `export` 按资料包的 `files[]` 取材；资料包列条目本体、上下文、预览与制作资料，渲染工具另从相同上游提交取得。
 从 Motion Atlas 仓库的同一上游 SHA 取得完整工具目录，或使用已有本地仓库；`--local-root` 只读取该工作树，不下载渲染工具。渲染脚本还依赖 `scripts/lib/cdp.mjs`、`scripts/lib/catalog.mjs` 等，不能只拿单个 `.mjs`。
 需要 Node.js ≥ 22 和本机 Edge／Chrome／Chromium；未被自动找到的浏览器用 `BROWSER_PATH` 指定。合成 MP4 需要可用的 ffmpeg；没有时渲染器保留帧序列并打印合成命令。
 
@@ -16,7 +16,7 @@ python "$ATLAS_SCRIPT" --local-root "$MOTION_ROOT" export map-pilgrimage --out "
 mkdir -p "$PREVIEW_ROOT/frames"
 ```
 
-`demo` 目标目录必须不存在，重复演示时把 `PREVIEW_ROOT` 改成一个新目录。此处完整导出，不用 `--code-only` 丢掉运行所需媒体。按用户真实内容修改导出副本的 `config.js` 或 `CONFIG`。用单独的 Git Bash 终端从整个预览目录启动服务器，同时服务 Demo、关键帧和拼条页面；第二个终端也要将 `PREVIEW_ROOT` 设为同一个目录：
+`demo` 目标目录必须不存在，重复演示时把 `PREVIEW_ROOT` 改成一个新目录。此处完整导出，不用 `--code-only` 丢掉运行所需媒体。按用户真实内容修改导出副本：地图案例修改 `film/config.js` 和 `film/scenes.js`；拆分巧思修改 `mechanism/`，重放巧思修改 `index.html` 的 replay 配置。用单独的 Git Bash 终端从整个预览目录启动服务器，同时服务 Demo、关键帧和拼条页面；第二个终端也要将 `PREVIEW_ROOT` 设为同一个目录：
 
 ```bash
 PREVIEW_ROOT=/c/Users/mibxr/Code/MIBXR/_atlas-work/t4-skills/preview-test
@@ -29,10 +29,12 @@ python -m http.server 4331 --bind 127.0.0.1 --directory "$PREVIEW_ROOT"
 
 时间驱动作品通过 `MotionKit.expose(tl)` 提供 `window.__motion`：
 
-- `duration`、`markers`、`time`、`playing`；`ready` 在全部资源（图片、字体、模型、音轨、帧序列、地图瓦片）加载完成后兑现。
+- `duration`、`markers`、`time`、`playing`；`ready` 在已登记的必需资源与初始帧完成后兑现，失败时拒绝。地图只等待开头缓冲，后续瓦片由播放缓冲或 seek 等待。
 - `seek(t)` 返回 Promise，等待 `render(t)` 的异步工作；`pause()` 停止播放，`play()` 开始播放。
 - `orient`、`orients` 与 `setOrient(o)`；后者返回 Promise。`orients=[]` 表示没有固定画幅舞台。
 - 挂了乐谱时，`audio.renderWav({ from, to, sampleRate })` 离线输出 WAV 数据；否则 `audio=null`。
+
+加载进度、失败与 ready 前门控字段见相同上游提交的 `docs/pipeline.md`“五、加载与就绪”。
 
 取帧顺序是：打开带 `?render=1&embed=1&orient=landscape` 的入口，等待 `window.__motion` 和 `ready`，调用 `pause()`，再对每个时刻 `await seek(t)` 后截图。真实画面必须只由 `t` 决定；异步地图、图片与字体就绪后再截图，不能用墙上时钟等待代替 seek。
 
@@ -88,9 +90,9 @@ ffprobe -v error -select_streams v:0 -count_frames -show_entries stream=width,he
 
 ## 资源与完成状态
 
-`map-pilgrimage` 依赖外部 MapLibre、OpenFreeMap 与地形瓦片；默认卡片画面由 `scenes.js` 生成。任一资源加载失败时页面显示错误与重试，`ready` 不兑现；修复网络或路径后重跑受影响的步骤。
+`map-pilgrimage` 依赖外部 MapLibre、OpenFreeMap 与地形瓦片；默认卡片画面由 `film/scenes.js` 生成。必需准备任务失败时页面显示错误与重试，`ready` 拒绝；修复网络或路径后重跑受影响的步骤。
 
-截图工具对 `ready` 的等待为 60 秒；Demo 中单个资源 60 秒没有新数据即判为下载超时。慢网导致前者超时时，先检查资源；需要更长等待时在用户项目的无头浏览器中等待 `ready`，再 `await seek(t)` 截图，保留实际等待和未就绪状态，不改只读上游脚本。
+`shot`／`capture` 等待 `ready` 为 60 秒，`render` 为 120 秒；计数请求收到响应头后，响应体连续 60 秒没有新数据即判为下载超时。慢网导致工具等待超时时，先检查资源；需要更长等待时在用户项目的无头浏览器中等待 `ready`，再 `await seek(t)` 截图。
 
 ## 选定方向后正式渲染
 
@@ -100,4 +102,4 @@ ffprobe -v error -select_streams v:0 -count_frames -show_entries stream=width,he
 node "$MOTION_ROOT/scripts/render.mjs" 'http://127.0.0.1:4331/demo/demos/cases/map-pilgrimage/index.html' --orient landscape --fps 30 --audio --out "$PREVIEW_ROOT/final-landscape"
 ```
 
-对照最终节拍表检查时长、关键帧与声音同步；交互作品另在真实输入和外部 seek／play 之间切换验证。输出帧、第三方素材和参考视频取帧只留在工作区，不纳入 Git 提交。
+对照最终节拍表检查时长、关键帧与声音同步；交互作品另在真实输入和外部 seek／play 之间切换验证。第三方画面、音乐、字体可以随作品提交，附许可原文与出处署名。输出帧和参考视频取帧留在工作区。

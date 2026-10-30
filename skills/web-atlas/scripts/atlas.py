@@ -236,6 +236,12 @@ def merged_files(cases):
     return list(records.values())
 
 
+def code_file(record):
+    return record['role'] in {'source', 'context', 'vendor', 'license'} or (
+        record['role'] == 'process' and re.search(r'\.(md|txt|json|css|js|mjs)$', record['path'], re.I)
+    )
+
+
 def read_source(atlas, records):
     sources = []
     for record in records:
@@ -352,8 +358,8 @@ def material_export(atlas, args):
 
 def pattern_export(atlas, args):
     bundle, cases = atlas.pattern_bundle(args.pattern_id)
-    records = merged_files(cases)
-    selected = [record for record in records if not args.code_only or record['role'] in {'source', 'context'}]
+    records = bundle['files']
+    selected = [record for record in records if not args.code_only or code_file(record)]
     out = Path(args.out).absolute()
     no_symlinks(out)
     out = out.resolve()
@@ -395,11 +401,12 @@ def export(atlas, args, kind='case'):
     bundle_id = args.material_id if kind == 'material' else args.case_id
     bundle = atlas.material_bundle(bundle_id) if kind == 'material' else atlas.bundle(bundle_id)
     row = atlas.materials[bundle_id] if kind == 'material' else atlas.entries[bundle_id]
+    entrypoint = row['paths'].get('demo') or row['paths']['snapshot'] + row['paths']['snapshotEntry']
     out = Path(args.out).absolute()
     no_symlinks(out)
     if out.exists():
         raise AtlasError(f"Export requires a new directory; already exists: {out}")
-    selected = [r for r in bundle["files"] if not args.code_only or r["role"] in {"source", "context"}]
+    selected = [r for r in bundle["files"] if not args.code_only or code_file(r)]
     if any(r["path"].casefold() == "atlas-export.json" for r in selected):
         raise AtlasError("Source manifest conflicts with export metadata")
     out.parent.mkdir(parents=True, exist_ok=True)
@@ -415,6 +422,7 @@ def export(atlas, args, kind='case'):
         metadata = {
             "schemaVersion": 1, "id": bundle_id, "provenance": atlas.provenance(),
             "paths": row["paths"],
+            "entrypoint": entrypoint,
             "codeOnly": args.code_only, "files": selected,
             "omitted": [r["path"] for r in bundle["files"] if r not in selected],
             "filesNotDownloaded": [{**r, "url": atlas.url(r["path"]) if not atlas.local else None} for r in bundle["files"] if r not in selected],
@@ -428,7 +436,7 @@ def export(atlas, args, kind='case'):
     except Exception:
         shutil.rmtree(out)
         raise
-    result = {"id": bundle_id, "provenance": atlas.provenance(), "directory": str(out), "files": len(selected), "omitted": metadata['omitted'], "entrypoint": metadata["paths"]["demo"]}
+    result = {"id": bundle_id, "provenance": atlas.provenance(), "directory": str(out), "files": len(selected), "omitted": metadata['omitted'], "entrypoint": metadata['entrypoint']}
     if kind == 'material':
         result['kind'] = kind
     emit(result)
@@ -451,7 +459,7 @@ def main():
     save = commands.add_parser("export", help="Download a case into a new directory")
     save.add_argument("case_id")
     save.add_argument("--out", required=True)
-    save.add_argument("--code-only", action="store_true", help="Download source/context and explicitly list omitted media")
+    save.add_argument("--code-only", action="store_true", help="Download source/context/vendor/license and process text; list omitted files")
     pattern_find = commands.add_parser('pattern-search', help='Search reusable design patterns across source cases')
     pattern_find.add_argument('query', nargs='?', default='')
     pattern_find.add_argument('--category', help='Exact pattern category filter')
@@ -465,7 +473,7 @@ def main():
     pattern_save = commands.add_parser('pattern-export', help='Download a pattern and its related case demos/context')
     pattern_save.add_argument('pattern_id')
     pattern_save.add_argument('--out', required=True)
-    pattern_save.add_argument('--code-only', action='store_true', help='Download source/context and explicitly list omitted media')
+    pattern_save.add_argument('--code-only', action='store_true', help='Download source/context/vendor/license and process text; list omitted files')
     material_find = commands.add_parser('material-search', help='Search content materials and their runnable examples')
     material_find.add_argument('query', nargs='?', default='')
     material_find.add_argument('--category', help='Exact material category filter')
@@ -478,7 +486,7 @@ def main():
     material_save = commands.add_parser('material-export', help='Download a resource and its runnable examples')
     material_save.add_argument('material_id')
     material_save.add_argument('--out', required=True)
-    material_save.add_argument('--code-only', action='store_true', help='Download source/context and explicitly list omitted media')
+    material_save.add_argument('--code-only', action='store_true', help='Download source/context/vendor/license and process text; list omitted files')
     info = commands.add_parser("info", help="Report the active upstream version and directory counts")
     commands.add_parser("refresh", help="Resolve the latest default-branch commit and atomically refresh --session")
     args = parser.parse_args()

@@ -44,8 +44,8 @@ python ATLAS_SCRIPT --session SESSION_FILE refresh
 
 ## 取得完整材料与预览
 
-需要可运行参考时执行 `export`、`pattern-export` 或 `material-export`，按固定的 Git 提交读取文件，保留仓库相对目录。目标目录必须尚不存在。巧思导出自动取得相关案例的完整 demo、素材和上下文，`atlas-export.json` 保留巧思包、`sourceFiles`、来源案例包、文件路径与上游版本；以原子机制的职责取材，完整 demo 用于理解页面关系。素材导出保留资源包、样例源码和许可上下文，目录中的实际文件由清单决定。各导出均支持 `--code-only` 仅下载源码与上下文，并列明未下载素材及预览。完整预览媒体按清单补齐，用静态 HTTP 服务器服务导出根目录，打开输出的 `entrypoint` 或 `entrypoints[].path`。
+执行 `export`、`pattern-export` 或 `material-export`，按固定的 Git 提交读取文件，保留仓库相对目录。目标目录必须尚不存在。巧思导出按 `bundle.files` 保存自身条目、Prompt 及相关案例的完整 demo、素材和上下文，`atlas-export.json` 保留巧思包、`sourceFiles`、来源案例包、文件路径与上游版本；以原子机制的职责取材，完整 demo 用于理解页面关系。素材导出保留资源包、样例源码、完整原文快照和许可上下文，目录中的实际文件由清单决定。各导出均支持 `--code-only`，下载 `source`、`context`、`vendor`、`license` 角色及 `process` 中扩展名为 `.md`、`.txt`、`.json`、`.css`、`.js`、`.mjs` 的文件；未下载路径列在 `omitted`，对应文件信息与远程地址列在 `filesNotDownloaded`。完整预览媒体按清单补齐，用静态 HTTP 服务器服务导出根目录，打开 `atlas-export.json` 的 `entrypoint`，巧思使用 `entrypoints[].path`；文字快照的入口为快照目录内的 `snapshotEntry`，可运行内容的入口为 `demo`。
 
 ## 直接读取入口
 
-[Agent 取材说明](https://github.com/MIBXR/web-atlas/blob/master/docs/agent.md) 与 `agent/catalog.json`、`agent/cases/<id>.json`、`agent/patterns.json`、`agent/patterns/<id>.json`、`agent/materials.json`、`agent/materials/<id>.json` 提供直接读取入口。
+[Agent 取材说明](https://github.com/MIBXR/web-atlas/blob/master/docs/agent.md) 与 `agent/catalog.json`、`agent/cases/<id>.json`、`agent/patterns/index.json`、`agent/patterns/<id>.json`、`agent/materials/index.json`、`agent/materials/<id>.json` 提供直接读取入口。
