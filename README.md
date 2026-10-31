@@ -2,12 +2,12 @@
 
 把与 AI 协作中反复用到的工作方法整理成 Agent 技能，换一台电脑或换一个 Agent 也能继续使用。
 
-| 技能 | 用途 |
-| --- | --- |
-| [web-atlas](#网页设计参考web-atlas) | 网站与网页应用的设计：剖析需求，从 Web Atlas 选择并组合案例、巧思和素材，取得源码后实现页面。 |
-| [motion-atlas](#影像与操作台参考motion-atlas) | 按时间线播放的作品：片头、宣传片、数据短片和交互操作台，从 Motion Atlas 取材，实现后逐帧出片。 |
-| [desktop-pet-workflow](#桌宠制作与交付desktop-pet-workflow) | 桌宠的设计、制作、动作修复、展示网站与 Git 交付。 |
-| [lean-audit](#精简审查lean-audit) | 找出 Agent 配置里诱发过度设计的写法，开发完成后找出改动里超出计划的部分。 |
+| 技能 | 版本 | 用途 |
+| --- | --- | --- |
+| [web-atlas](#网页设计参考web-atlas) | `1.0.0` | 网站与网页应用的设计：剖析需求，从 Web Atlas 选择并组合案例、巧思和素材，取得源码后实现页面。 |
+| [motion-atlas](#影像与操作台参考motion-atlas) | `1.0.0` | 按时间线播放的作品：片头、宣传片、数据短片和交互操作台，从 Motion Atlas 取材，实现后逐帧出片。 |
+| [desktop-pet-workflow](#桌宠制作与交付desktop-pet-workflow) | `1.0.0` | 桌宠的设计、制作、动作修复、展示网站与 Git 交付。 |
+| [lean-audit](#精简审查lean-audit) | `1.0.0` | 找出 Agent 配置里诱发过度设计的写法，开发完成后找出改动里超出计划的部分。 |
 
 ## 安装
 
@@ -18,6 +18,8 @@
 skills/web-atlas。
 如果已经安装同名技能，先保留本地修改，再更新。
 ```
+
+每个技能单独发布版本，标签为 `<技能名>@<版本>`，例如 `web-atlas@1.0.0`。安装固定版本时，把上面的“main 分支”换成对应标签。
 
 在 Claude Code 等其他 Agent 中，把 `skills/<技能名>/` 整个目录复制到该 Agent 的技能目录，例如 `~/.claude/skills/<技能名>/`。
 
