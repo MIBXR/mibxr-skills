@@ -212,16 +212,41 @@ def query_terms(query):
 def search(atlas, args):
     terms = query_terms(args.query)
     taxonomy = atlas.catalog['taxonomy']
+    case_filters = {'style': args.style, 'purpose': args.purpose, 'tech': args.tech}
+    cases_only = any(value is not None for value in case_filters.values())
+    if cases_only and args.kind in ('patterns', 'materials'):
+        raise AtlasError(f'--style, --purpose and --tech apply only to cases; cannot use with --kind {args.kind}')
+    for option, group in [('style', 'styles'), ('purpose', 'purposes'), ('tech', 'techs')]:
+        value = case_filters[option]
+        if value is not None and value not in taxonomy[group]:
+            choices = ', '.join(taxonomy[group])
+            raise AtlasError(f'Unknown --{option} value: {value}. Choose from: {choices}')
     results = []
     for entry in atlas.entries.values():
         if args.kind and entry['kind'] != args.kind:
+            continue
+        if cases_only and entry['kind'] != 'cases':
             continue
         if args.carrier and args.carrier not in entry.get('carriers', []):
             continue
         if args.type and args.type not in entry.get('types', []):
             continue
+        if args.style and entry['style'] != args.style:
+            continue
+        if args.purpose and entry['purpose'] != args.purpose:
+            continue
+        if args.tech and args.tech not in entry['tech']:
+            continue
         labels = [taxonomy['carriers'][key] for key in entry.get('carriers', [])]
         labels += [taxonomy['types'][key] for key in entry.get('types', [])]
+        case_labels = {}
+        if entry['kind'] == 'cases':
+            case_labels = {
+                'styleLabel': taxonomy['styles'][entry['style']],
+                'purposeLabel': taxonomy['purposes'][entry['purpose']],
+                'techLabels': [taxonomy['techs'][key] for key in entry['tech']],
+            }
+            labels += [case_labels['styleLabel'], case_labels['purposeLabel'], *case_labels['techLabels']]
         groups = [
             (3, [entry['id'], entry['title']]),
             (2, [*entry.get('tags', []), *labels, *entry.get('carriers', []), *entry.get('types', []), entry.get('type', '')]),
@@ -233,11 +258,12 @@ def search(atlas, args):
                     for term in terms for weight, text in haystacks if term in text)
         if terms and not score:
             continue
-        results.append({**entry, 'score': score})
+        results.append({**entry, **case_labels, 'score': score})
     results.sort(key=lambda row: (-row['score'], row['id']))
     emit({
         'schemaVersion': atlas.catalog['schemaVersion'], 'provenance': atlas.provenance(),
-        'query': args.query, 'filters': {'kind': args.kind, 'carrier': args.carrier, 'type': args.type},
+        'query': args.query,
+        'filters': {'kind': args.kind, 'carrier': args.carrier, 'type': args.type, **case_filters},
         'method': 'keyword', 'total': len(results), 'offset': args.offset,
         'limit': args.limit, 'hasMore': args.offset + args.limit < len(results),
         'results': results[args.offset:args.offset + args.limit],
@@ -320,6 +346,9 @@ def main():
     find.add_argument('--kind', choices=('cases', 'patterns', 'materials'), help='Entry kind filter')
     find.add_argument('--carrier', choices=('video', 'console'), help='Carrier filter')
     find.add_argument('--type', help='Exact pattern type filter from the catalog taxonomy')
+    find.add_argument('--style', help='Exact case style filter from the catalog taxonomy')
+    find.add_argument('--purpose', help='Exact case purpose filter from the catalog taxonomy')
+    find.add_argument('--tech', help='Case technology contained in tech[] from the catalog taxonomy')
     find.add_argument('--limit', type=int, default=5)
     find.add_argument('--offset', type=int, default=0, help='Skip this many ranked results; continue until hasMore is false')
     detail = commands.add_parser('show', help='Read a case, pattern or material bundle and optionally full source')

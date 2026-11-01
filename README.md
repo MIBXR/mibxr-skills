@@ -5,7 +5,7 @@
 | 技能 | 版本 | 用途 |
 | --- | --- | --- |
 | [web-atlas](#网页设计参考web-atlas) | `1.0.0` | 网站与网页应用的设计：剖析需求，从 Web Atlas 选择并组合案例、巧思和素材，取得源码后实现页面。 |
-| [motion-atlas](#影像与操作台参考motion-atlas) | `1.0.0` | 按时间线播放的作品：片头、宣传片、数据短片和交互操作台，从 Motion Atlas 取材，实现后逐帧出片。 |
+| [motion-atlas](#影像与操作台参考motion-atlas) | `1.1.0` | 按时间线播放的作品：片头、宣传片、数据短片和交互操作台，从 Motion Atlas 取材，实现后逐帧出片。 |
 | [desktop-pet-workflow](#桌宠制作与交付desktop-pet-workflow) | `1.0.0` | 桌宠的设计、制作、动作修复、展示网站与 Git 交付。 |
 | [lean-audit](#精简审查lean-audit) | `1.0.0` | 找出 Agent 配置里诱发过度设计的写法，开发完成后找出改动里超出计划的部分。 |
 

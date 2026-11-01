@@ -12,6 +12,8 @@ python ATLAS_SCRIPT --session SESSION_FILE search "" --limit 100 --offset 0
 python ATLAS_SCRIPT --session SESSION_FILE search "地图 节奏" --limit 5
 python ATLAS_SCRIPT --session SESSION_FILE search "" --kind cases --carrier video
 python ATLAS_SCRIPT --session SESSION_FILE search "" --carrier console
+python ATLAS_SCRIPT --session SESSION_FILE search "" --kind cases --style hand-drawn --limit 100
+python ATLAS_SCRIPT --session SESSION_FILE search "" --kind cases --tech threejs --limit 100
 python ATLAS_SCRIPT --session SESSION_FILE search "转场" --kind patterns --type transition --limit 5
 python ATLAS_SCRIPT --session SESSION_FILE search "" --kind materials
 python ATLAS_SCRIPT --session SESSION_FILE show motion-showreel
@@ -28,7 +30,7 @@ python ATLAS_SCRIPT --session SESSION_FILE export map-pilgrimage --out NEW_DIR -
 atlas.py [--session PATH] [--ref FULL_COMMIT] [--local-root CHECKOUT] COMMAND
 info
 refresh
-search QUERY [--kind cases|patterns|materials] [--carrier video|console] [--type TYPE] [--limit N] [--offset N]
+search QUERY [--kind cases|patterns|materials] [--carrier video|console] [--type TYPE] [--style STYLE] [--purpose PURPOSE] [--tech TECH] [--limit N] [--offset N]
 show ID [--source]
 export ID --out NEW_DIR [--code-only]
 ```
@@ -36,6 +38,11 @@ export ID --out NEW_DIR [--code-only]
 - `search` 默认在案例、巧思和素材中检索；空查询列目录。`--kind` 筛选 `cases`／`patterns`／`materials`。
 - `--carrier` 匹配目录实际的 `carriers[]`：`video`（影像视频）、`console`（交互操作台）。
 - `--type` 匹配巧思的 `types[]`：`composition`（画面构成）、`type-motion`（文字动效）、`transition`（转场）、`camera`（镜头与空间）、`feedback`（交互反馈）、`rhythm`（节奏与时序）、`hud`（信息层 HUD）、`texture`（质感与后期）、`sound`（声音）。案例没有 `types[]`，带类型筛选不会命中案例。
+- `--style` 匹配案例的 `style`：`hand-drawn`（手绘与绘画）、`print-craft`（版画、剪纸与传统工艺）、`graphic-type`（图形与排版）、`interface`（界面与发布）、`evidence`（实证与数据）、`documentary`（剪辑与纪实）、`dimensional`（3D、卡通与游戏）。
+- `--purpose` 匹配案例的 `purpose`：`brand`（品牌与产品）、`explainer`（知识讲解）、`data`（数据与实证）、`news`（新闻纪实）、`story`（叙事短片）、`title-art`（片头与视觉）。
+- `--tech` 匹配案例的 `tech[]` 包含的值：`canvas2d`（Canvas 2D）、`webgl`（原生 WebGL 着色）、`threejs`（three.js 3D）、`footage`（实拍素材）、`prerendered`（离线渲染帧）、`remotion`（React + Remotion）、`maplibre`（MapLibre 地图）、`dom`（DOM / SVG）。
+- `--style`、`--purpose`、`--tech` 各接受一个值，运行时按 catalog 的 taxonomy 校验，未知值报错并列出可选值。这三项只筛选案例；省略 `--kind` 时也只返回案例，与 `--kind patterns` 或 `--kind materials` 同用时报错。
+- 案例摘要保留 `style`、`purpose`、`tech` 原值，并通过 `styleLabel`、`purposeLabel`、`techLabels` 提供 taxonomy 中的中文名；JSON 的 `filters` 记录三项筛选值。
 - `--limit` 为 1–100；`--offset` 为非负整数。`hasMore=true` 时保持查询、过滤与会话不变，将 offset 增加本页 limit 后继续，直到 `hasMore=false`。
 - 中文和英文关键词用于检索标题、摘要、标签等内容，排序分数只用于召回排序，是否适用仍按简报判断。
 
