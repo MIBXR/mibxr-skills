@@ -4,7 +4,7 @@
 
 使用本 skill 的 `scripts/atlas.py`（Python 3，仅标准库），读取 `MIBXR/motion-atlas` 的 Agent 协议，输出 UTF-8 JSON。全局参数放在子命令前；下例的 `ATLAS_SCRIPT` 是脚本实际路径，`SESSION_FILE` 是用户项目 `work/<任务名>/motion-session.json`，`NEW_DIR` 是尚不存在的导出目录。
 
-远程首次使用 `--session SESSION_FILE` 时，解析 GitHub 默认分支的最新完整 Git SHA。案例、巧思和素材共享该 SHA，后续检索、查看、取材和导出持续传同一会话路径。会话保存 `repository`，跨仓库复用会报错；状态写在用户工作区，不写入 skill 安装目录。
+远程首次使用 `--session SESSION_FILE` 时，解析 GitHub 默认分支的最新完整 Git SHA。案例、巧思和素材共享该 SHA，后续检索、查看、取材和导出均传入同一会话路径。会话保存 `repository`，跨仓库复用会报错；状态写在用户工作区，不写入 skill 安装目录。
 
 ```bash
 python ATLAS_SCRIPT --session SESSION_FILE info
@@ -40,7 +40,7 @@ export ID --out NEW_DIR [--code-only]
 - `--type` 匹配巧思的 `types[]`：`composition`（画面构成）、`type-motion`（文字动效）、`transition`（转场）、`camera`（镜头与空间）、`feedback`（交互反馈）、`rhythm`（节奏与时序）、`hud`（信息层 HUD）、`texture`（质感与后期）、`sound`（声音）。案例没有 `types[]`，带类型筛选不会命中案例。
 - `--style` 匹配案例的 `style`：`hand-drawn`（手绘与绘画）、`print-craft`（版画、剪纸与传统工艺）、`graphic-type`（图形与排版）、`interface`（界面与发布）、`evidence`（实证与数据）、`documentary`（剪辑与纪实）、`dimensional`（3D、卡通与游戏）。
 - `--purpose` 匹配案例的 `purpose`：`brand`（品牌与产品）、`explainer`（知识讲解）、`data`（数据与实证）、`news`（新闻纪实）、`story`（叙事短片）、`title-art`（片头与视觉）。
-- `--tech` 匹配案例的 `tech[]` 包含的值：`canvas2d`（Canvas 2D）、`webgl`（原生 WebGL 着色）、`threejs`（three.js 3D）、`footage`（实拍素材）、`prerendered`（离线渲染帧）、`remotion`（React + Remotion）、`maplibre`（MapLibre 地图）、`dom`（DOM / SVG）。
+- `--tech` 匹配案例 `tech[]` 中的值：`canvas2d`（Canvas 2D）、`webgl`（原生 WebGL 着色）、`threejs`（three.js 3D）、`footage`（实拍素材）、`prerendered`（离线渲染帧）、`remotion`（React + Remotion）、`maplibre`（MapLibre 地图）、`dom`（DOM / SVG）。
 - `--style`、`--purpose`、`--tech` 各接受一个值，运行时按 catalog 的 taxonomy 校验，未知值报错并列出可选值。这三项只筛选案例；省略 `--kind` 时也只返回案例，与 `--kind patterns` 或 `--kind materials` 同用时报错。
 - 案例摘要保留 `style`、`purpose`、`tech` 原值，并通过 `styleLabel`、`purposeLabel`、`techLabels` 提供 taxonomy 中的中文名；JSON 的 `filters` 记录三项筛选值。
 - `--limit` 为 1–100；`--offset` 为非负整数。`hasMore=true` 时保持查询、过滤与会话不变，将 offset 增加本页 limit 后继续，直到 `hasMore=false`。
@@ -51,7 +51,7 @@ export ID --out NEW_DIR [--code-only]
 
 ## SHA、离线与刷新
 
-`info` 显示当前上游信息与案例、巧思、素材数。无会话时读取最新默认分支；已有会话时复用其 SHA。`--ref` 只接受完整 40 位 Git commit，不接受分支名或短 SHA；已有会话与显式 ref 不同会报错，复现另一提交时使用独立会话。
+`info` 显示当前上游信息与案例、巧思、素材数。无会话时读取默认分支的最新提交；已有会话时复用其 SHA。`--ref` 只接受完整 40 位 Git commit，不接受分支名或短 SHA；已有会话的 SHA 与显式 ref 不同会报错，复现另一提交时使用独立会话。
 
 ```bash
 python ATLAS_SCRIPT info
@@ -74,7 +74,7 @@ python ATLAS_SCRIPT --session SESSION_FILE refresh
 
 `--code-only` 仅下载扩展名属于 `.html`、`.htm`、`.js`、`.mjs`、`.cjs`、`.css`、`.json`、`.md`、`.txt`、`.svg`、`.glsl`、`.frag`、`.vert`、`.wgsl`、`.xml`、`.csv` 的代码与文本文件，扩展名不区分大小写；其余文件记录在 `notDownloaded`，每项含 `path` 与 `bytes`。未带该参数时下载全部文件，`notDownloaded` 为空数组。图片、音频、字体等依赖可能因此未下载，运行前按清单补齐。
 
-导出后从根目录启动静态 HTTP 服务器，打开清单的实际入口；带地图、字体和异步资源的 Demo 不用 `file://` 代替运行验证：
+导出后从根目录启动静态 HTTP 服务器，打开清单中的实际入口；带地图、字体和异步资源的 Demo 不用 `file://` 代替运行验证：
 
 ```bash
 python -m http.server 4331 --bind 127.0.0.1 --directory NEW_DIR

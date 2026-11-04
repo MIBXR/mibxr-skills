@@ -2,9 +2,9 @@
 
 ## 工具从哪里来
 
-本 skill 的 `export` 按资料包的 `files[]` 取材；资料包列条目本体、上下文、预览与制作资料，渲染工具另从相同上游提交取得。
+本 skill 的 `export` 按资料包的 `files[]` 取材；资料包列出条目本体、上下文、预览与制作资料，渲染工具另从相同上游提交取得。
 从 Motion Atlas 仓库的同一上游 SHA 取得完整工具目录，或使用已有本地仓库；`--local-root` 只读取该工作树，不下载渲染工具。渲染脚本还依赖 `scripts/lib/cdp.mjs`、`scripts/lib/catalog.mjs` 等，不能只拿单个 `.mjs`。
-需要 Node.js ≥ 22 和本机 Edge／Chrome／Chromium；未被自动找到的浏览器用 `BROWSER_PATH` 指定。合成 MP4 需要可用的 ffmpeg；没有时渲染器保留帧序列并打印合成命令。
+需要 Node.js ≥ 22 和本机 Edge／Chrome／Chromium；未自动找到浏览器时，用 `BROWSER_PATH` 指定。合成 MP4 需要可用的 ffmpeg；没有时渲染器保留帧序列并打印合成命令。
 
 以下以本地仓库 `C:/Users/mibxr/Code/MIBXR/motion-atlas` 为例，命令在 Git Bash 中运行。Windows 先核实 `command -v bash python node ffmpeg ffprobe` 和 `node --version`；复杂命令保存为 UTF-8、LF 的 `.sh` 文件，再用已定位的 `bash.exe` 执行。输出全部写到用户工作区，仓库只读；替换路径、ID 和时间点后用于当前项目。
 
@@ -16,14 +16,14 @@ python "$ATLAS_SCRIPT" --local-root "$MOTION_ROOT" export map-pilgrimage --out "
 mkdir -p "$PREVIEW_ROOT/frames"
 ```
 
-`demo` 目标目录必须不存在，重复演示时把 `PREVIEW_ROOT` 改成一个新目录。此处完整导出，不用 `--code-only` 丢掉运行所需媒体。按用户真实内容修改导出副本：地图案例修改 `film/config.js` 和 `film/scenes.js`；拆分巧思修改 `mechanism/`，重放巧思修改 `index.html` 的 replay 配置。用单独的 Git Bash 终端从整个预览目录启动服务器，同时服务 Demo、关键帧和拼条页面；第二个终端也要将 `PREVIEW_ROOT` 设为同一个目录：
+`demo` 目标目录必须不存在，重复演示时把 `PREVIEW_ROOT` 改成一个新目录。此处完整导出，不用 `--code-only`，以免丢掉运行所需媒体。按用户真实内容修改导出副本：地图案例修改 `film/config.js` 和 `film/scenes.js`；拆分巧思修改 `mechanism/`，重放巧思修改 `index.html` 的 replay 配置。用单独的 Git Bash 终端从整个预览目录启动服务器，同时服务 Demo、关键帧和拼条页面；第二个终端也要将 `PREVIEW_ROOT` 设为同一个目录：
 
 ```bash
 PREVIEW_ROOT=/c/Users/mibxr/Code/MIBXR/_atlas-work/t4-skills/preview-test
 python -m http.server 4331 --bind 127.0.0.1 --directory "$PREVIEW_ROOT"
 ```
 
-保留仓库相对路径后的入口为 `http://127.0.0.1:4331/demo/demos/cases/map-pilgrimage/index.html`，以 `demo/atlas-export.json` 的实际入口为准。端口占用时换空闲端口，并同步修改下文 URL。渲染器对本地文件路径限制在上游仓库内，导出副本或用户项目须用 HTTP URL；无需修改只读仓库。
+保留仓库相对路径时，入口为 `http://127.0.0.1:4331/demo/demos/cases/map-pilgrimage/index.html`，以 `demo/atlas-export.json` 的实际入口为准。端口占用时换空闲端口，并同步修改下文 URL。渲染器要求本地文件路径位于上游仓库内，导出副本或用户项目须用 HTTP URL；无需修改只读仓库。
 
 ## 已核实的时间轴接口
 
@@ -36,11 +36,11 @@ python -m http.server 4331 --bind 127.0.0.1 --directory "$PREVIEW_ROOT"
 
 加载进度、失败与 ready 前门控字段见相同上游提交的 `docs/pipeline.md`“五、加载与就绪”。
 
-取帧顺序是：打开带 `?render=1&embed=1&orient=landscape` 的入口，等待 `window.__motion` 和 `ready`，调用 `pause()`，再对每个时刻 `await seek(t)` 后截图。真实画面必须只由 `t` 决定；异步地图、图片与字体就绪后再截图，不能用墙上时钟等待代替 seek。
+取帧顺序是：打开带 `?render=1&embed=1&orient=landscape` 的入口，等待 `window.__motion` 和 `ready`，调用 `pause()`，再对每个时刻 `await seek(t)` 后截图。真实画面必须只由 `t` 决定；异步地图、图片与字体就绪后再截图，不能用实际等待时长代替 seek。
 
 ## 关键帧条：6–8 帧
 
-读取案例 `entry.rhythm.beats`；巧思先读已提供的 `pattern.markers`，未提供时读取 `window.__motion.markers`，或 `MotionKit.replay` 配置、拆分型 `mechanism/config.js` 中的事件时刻。条目提供能量曲线时结合它，在段落起点、主要信息到达、能量峰值和收尾各取代表帧；有进出与回程的机制，覆盖前态、峰值、完成和回程。时间点以当前改写后的节拍表为准，避免机械均匀抽样。
+读取案例 `entry.rhythm.beats`；巧思先读已提供的 `pattern.markers`，未提供时读取 `window.__motion.markers`，或 `MotionKit.replay` 配置、拆分型 `mechanism/config.js` 中的事件时刻。条目提供能量曲线时一并参考，在段落起点、主要信息到达、能量峰值和收尾各取代表帧；有进出与回程的机制，覆盖前态、峰值、完成和回程。时间点以当前改写后的节拍表为准，避免机械均匀抽样。
 段落起点常是元素尚未显现的第一帧，取代表画面时要继续查看入场后的峰值或稳定态。`map-pilgrimage` 可取 `6、12.4、22、30.2、46、58` 秒，分别展示片名、抵达、卡片全屏、分屏对比、警示改道和结尾统计；这些时刻依据 `4、11.6、21、29.2、45、56` 秒的节拍起点及实际入场过程选择。改过时长或节奏后重选；需要验证回程时另取回程完成帧，不把这六帧当作全部状态验收。
 
 `shot.mjs` 接收 HTTP URL，可重复 `--t`；多时刻输出为 `key-6.png`、`key-12.4.png` 等，输出父目录先创建：
@@ -90,13 +90,13 @@ ffprobe -v error -select_streams v:0 -count_frames -show_entries stream=width,he
 
 ## 资源与完成状态
 
-`map-pilgrimage` 依赖外部 MapLibre、OpenFreeMap 与地形瓦片；默认卡片画面由 `film/scenes.js` 生成。必需准备任务失败时页面显示错误与重试，`ready` 拒绝；修复网络或路径后重跑受影响的步骤。
+`map-pilgrimage` 依赖外部 MapLibre、OpenFreeMap 与地形瓦片；默认卡片画面由 `film/scenes.js` 生成。必需的准备任务失败时，页面显示错误并提供重试，`ready` 拒绝；修复网络或路径后重跑受影响的步骤。
 
-`shot`／`capture` 等待 `ready` 为 60 秒，`render` 为 120 秒；计数请求收到响应头后，响应体连续 60 秒没有新数据即判为下载超时。慢网导致工具等待超时时，先检查资源；需要更长等待时在用户项目的无头浏览器中等待 `ready`，再 `await seek(t)` 截图。
+`shot`／`capture` 等待 `ready` 的时限为 60 秒，`render` 为 120 秒；计数请求收到响应头后，响应体连续 60 秒没有新数据即判为下载超时。慢网导致工具等待超时时，先检查资源；需要更长等待时在用户项目的无头浏览器中等待 `ready`，再 `await seek(t)` 截图。
 
 ## 选定方向后正式渲染
 
-确认用户方向后，才正式渲染完整片段。移除 `--from`／`--to`，默认覆盖 `0–duration`；横屏默认 1920×1080，竖屏默认 1080×1920，默认 30fps。例如：
+用户确认方向后，才正式渲染完整片段。移除 `--from`／`--to`，默认覆盖 `0–duration`；横屏默认 1920×1080，竖屏默认 1080×1920，默认 30fps。例如：
 
 ```bash
 node "$MOTION_ROOT/scripts/render.mjs" 'http://127.0.0.1:4331/demo/demos/cases/map-pilgrimage/index.html' --orient landscape --fps 30 --audio --out "$PREVIEW_ROOT/final-landscape"
