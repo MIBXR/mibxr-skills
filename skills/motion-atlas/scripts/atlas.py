@@ -221,6 +221,10 @@ def search(atlas, args):
         if value is not None and value not in taxonomy[group]:
             choices = ', '.join(taxonomy[group])
             raise AtlasError(f'Unknown --{option} value: {value}. Choose from: {choices}')
+    type_choices = {**taxonomy['types'], **taxonomy['materialTypes']}
+    if args.type is not None and args.type not in type_choices:
+        choices = ', '.join(type_choices)
+        raise AtlasError(f'Unknown --type value: {args.type}. Choose from: {choices}')
     results = []
     for entry in atlas.entries.values():
         if args.kind and entry['kind'] != args.kind:
@@ -229,8 +233,10 @@ def search(atlas, args):
             continue
         if args.carrier and args.carrier not in entry.get('carriers', []):
             continue
-        if args.type and args.type not in entry.get('types', []):
-            continue
+        if args.type:
+            entry_types = [entry['type']] if entry['kind'] == 'materials' else entry.get('types', [])
+            if args.type not in entry_types:
+                continue
         if args.style and entry['style'] != args.style:
             continue
         if args.purpose and entry['purpose'] != args.purpose:
@@ -345,7 +351,7 @@ def main():
     find.add_argument('query', nargs='?', default='')
     find.add_argument('--kind', choices=('cases', 'patterns', 'materials'), help='Entry kind filter')
     find.add_argument('--carrier', choices=('video', 'console'), help='Carrier filter')
-    find.add_argument('--type', help='Exact pattern type filter from the catalog taxonomy')
+    find.add_argument('--type', help='Exact pattern or material type filter from the catalog taxonomy')
     find.add_argument('--style', help='Exact case style filter from the catalog taxonomy')
     find.add_argument('--purpose', help='Exact case purpose filter from the catalog taxonomy')
     find.add_argument('--tech', help='Case technology contained in tech[] from the catalog taxonomy')

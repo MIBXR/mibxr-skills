@@ -3,8 +3,9 @@
 ## 读取完整条目
 
 摘要只用于检索和收窄候选范围。实现前执行 `show ID --source`，读取完整 `entry`（案例）或 `pattern`（巧思）、`documents.prompt`、`entrypoint` 与 `files[]`；巧思还带 `sourceCases`，按其案例 ID 读取来源案例，理解机制在完整时间线中的作用。
+素材取材读取 `workflow`、`relatedEntries` 和 `gallery`。
 
-案例的 `rhythm.duration`、`rhythm.bpm`、`rhythm.beats` 与 `energy` 用来理解时长、节拍和能量起伏；巧思的 `trigger`、`effect`、`timing`、`markers`、`tokens`、`accessibility` 与 `avoid` 用来检查采用条件和限制。文件是否可逐帧定位以实际 `window.__motion` 协议为准。
+案例的 `rhythm.duration`、`rhythm.bpm`、`rhythm.beats` 用来理解时长与节拍；能量起伏优先读 `energySegments`，其次读 `energy`，并读 `energyNote` 了解数值来源；巧思的 `trigger`、`effect`、`timing`、`markers`、`tokens` 与 `avoid` 用来检查采用条件和限制。文件是否可逐帧定位以实际 `window.__motion` 协议为准。
 
 ## 组合职责
 
