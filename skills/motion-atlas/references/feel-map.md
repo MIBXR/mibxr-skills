@@ -6,7 +6,7 @@
 
 | 用户说 | 先调（参数 → 方向；有证据的写出数值范围） | 别误调（容易被一起改坏的参数） | 依据（案例对） |
 | --- | --- | --- | --- |
-| 太冷 | 强调色 → 从青冷方向试暖金/暖白（#00E5FF 对照 #E9D7A5）；缓动 → 减少硬直线性，试连续缓入缓出。 | 不要同时增加所有回弹；终端精确性、信息对比仍要保住。 | mg-hud ↔ mg-line-art；mg-bauhaus ↔ mg-flat-vector |
+| 太冷 | 强调色 → 从冷蓝方向试暖金/暖白（#5FB8FF 对照 #E9D7A5）；缓动 → 减少硬直线性，试连续缓入缓出。 | 不要同时增加所有回弹；终端精确性、信息对比仍要保住。 | mg-synthwave ↔ mg-line-art；mg-bauhaus ↔ mg-flat-vector |
 | 太甜 | 回弹/挤压 → 减少（对照约1.15尺度峰、10%形变与无overshoot）；配色数量 → 从5–6色试减至单/双色。 | 不要把饱和度全部拉灰；也不要删掉角色或笑点的语义。 | mg-hanazi ↔ mg-bauhaus；mg-flat-vector ↔ mg-line-art |
 | 不够高级 | 配色关系 → 收敛到2–3邻近色或单/双色；标题入场幅度 → 尝试用透明度+约8px位移替代夸张的尺度回弹。 | 不要用慢速遮住关键信息，也不要把喜剧/扁平风格等同低质量。 | mg-hanazi ↔ mg-aurora-glass；mg-flat-vector ↔ mg-line-art |
 | 太乱 | 配色数量 → 减少互相竞争的颜色（5–6或8–32色，对照单/双色或2–3色）。 | 不要盲删信息或让状态失去区别；像素调色板不等于实际同时用色。 | mg-flat-vector ↔ mg-line-art；mg-pixel ↔ mg-paperclip |
@@ -14,7 +14,7 @@
 | 太用力 | 入场幅度 → 降低尺度峰，试透明度+8px位移；故障频率 → 从每秒1–2次改为只在需要的节点出现。 | 不要把所有运动消掉；关键动作的因果关系和主标题层级仍须清楚。 | mg-hanazi ↔ mg-aurora-glass；mg-synthwave ↔ mg-line-art |
 | 太慢 | 首个有效信息到达 → 提前（案例对照4s片名与22s阵列）；独立事件间隔 → 缩短，先加有效变化而非全片加速。 | 不要把20–40s背景漂移周期误当镜头停留，也不要压缩必要的阅读时间。 | archive-os ↔ map-pilgrimage；mg-aurora-glass ↔ mg-bauhaus |
 | 太快 | 主事件间隔 → 拉开（4–6s事件，对照7.5–13s终端阶段）；持续背景运动 → 放慢，让重要文字有静止窗口。 | 不要只降低输出帧率；长周期背景与操作响应时长分开处理。 | map-pilgrimage ↔ archive-os；mg-bauhaus ↔ mg-aurora-glass |
-| 太严肃 | 形体弹性 → 在一个主体试少量挤压伸展（风格参照约10%）；字形或提示音 → 从仪表式换成更亲和的一类。 | 不要把全部信息改成圆胖字；精确数值和警示含义仍稳定。 | mg-bauhaus ↔ mg-flat-vector；mg-hud ↔ mg-hanazi |
+| 太严肃 | 形体弹性 → 在一个主体试少量压扁拉伸（参照 mg-flat-vector 的速度驱动形变）；字形或提示音 → 从仪表式换成更亲和的一类。 | 不要把全部信息改成圆胖字；精确数值和警示含义仍稳定。 | mg-bauhaus ↔ mg-flat-vector；archive-os ↔ mg-hanazi |
 | 太幼稚 | 回弹/挤压 → 收敛到无overshoot；字形与配色 → 从多描边、高饱和改试细线、单/双色。 | 不要损失角色识别或变得冷硬；只改装饰性的弹性。 | mg-flat-vector ↔ mg-bauhaus；mg-hanazi ↔ mg-line-art |
 | 太硬 | 主缓动 → 尝试将steps/linear改为连续ease-out（流体参照0.22,1,0.36,1）；次级跟随 → 加少量2–3帧延迟。 | 像素风整像素与机械动作可能是必要约束；先检查是否允许改变。 | mg-bauhaus ↔ mg-flat-vector；mg-pixel ↔ mg-liquid |
 | 太软 | 回弹/拖尾 → 减少，试无overshoot；边缘清晰度 → 降低流体模糊，建立清楚落点。 | 不要给连续流体强套像素steps；保留所选媒介的基本形态。 | mg-flat-vector ↔ mg-bauhaus；mg-liquid ↔ mg-pixel |

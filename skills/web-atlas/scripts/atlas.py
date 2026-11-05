@@ -288,7 +288,7 @@ def show(atlas, args):
 def pattern_search(atlas, args):
     atlas.require_patterns()
     terms = list(dict.fromkeys(term.casefold() for term in re.split(r'[\s,，;；]+', args.query) if term))
-    fields = ['id', 'title', 'category', 'experienceTypes', 'summary', 'mechanism', 'trigger', 'effect', 'useCases', 'avoid', 'constraints', 'composition', 'accessibility', 'parameters', 'sources', 'sourceCases']
+    fields = ['id', 'title', 'category', 'experienceTypes', 'summary', 'mechanism', 'trigger', 'effect', 'useCases', 'avoid', 'constraints', 'composition', 'parameters', 'sources', 'sourceCases']
     results = []
     for pattern in atlas.patterns.values():
         if args.category and pattern['category'].casefold() != args.category.casefold():
@@ -306,7 +306,8 @@ def pattern_search(atlas, args):
         if terms and not matches:
             continue
         score = sum(4 if field in {'id', 'title', 'useCases', 'mechanism'} else 1 if field in {'avoid', 'constraints'} else 2 for match in matches for field in match['fields'])
-        result = {key: pattern[key] for key in ('id', 'title', 'category', 'summary', 'trigger', 'effect', 'useCases', 'avoid', 'constraints', 'composition', 'accessibility', 'sources', 'sourceFiles', 'paths')}
+        result = {key: pattern[key] for key in ('id', 'title', 'category', 'summary', 'useCases', 'avoid', 'constraints', 'composition', 'sources', 'sourceFiles', 'paths', 'preview')}
+        result.update({key: pattern[key] for key in ('trigger', 'effect') if pattern.get(key)})
         result.update({'experienceTypes': pattern['experienceTypes'], 'sourceCases': source_cases, 'score': score, 'matches': matches})
         results.append(result)
     results.sort(key=lambda row: (-row['score'], row['id']))
@@ -358,6 +359,11 @@ def material_export(atlas, args):
 
 def pattern_export(atlas, args):
     bundle, cases = atlas.pattern_bundle(args.pattern_id)
+    case_paths = {case['id']: case['paths']['demo'] for case in bundle['sourceCases']}
+    entrypoints = dict.fromkeys(
+        (source['caseId'], source['focus'].get('entrypoint') or case_paths[source['caseId']])
+        for source in bundle['pattern']['sources']
+    )
     records = bundle['files']
     selected = [record for record in records if not args.code_only or code_file(record)]
     out = Path(args.out).absolute()
@@ -375,7 +381,7 @@ def pattern_export(atlas, args):
         'omitted': [record['path'] for record in records if record not in selected],
         'filesNotDownloaded': [{**record, 'url': atlas.url(record['path']) if not atlas.local else None} for record in records if record not in selected],
         'bundle': bundle, 'sourceCaseBundles': cases,
-        'entrypoints': [{'caseId': source['id'], 'path': source['paths']['demo']} for source in bundle['sourceCases']],
+        'entrypoints': [{'caseId': case_id, 'path': path} for case_id, path in entrypoints],
     }
     out.parent.mkdir(parents=True, exist_ok=True)
     out.mkdir()
@@ -401,7 +407,9 @@ def export(atlas, args, kind='case'):
     bundle_id = args.material_id if kind == 'material' else args.case_id
     bundle = atlas.material_bundle(bundle_id) if kind == 'material' else atlas.bundle(bundle_id)
     row = atlas.materials[bundle_id] if kind == 'material' else atlas.entries[bundle_id]
-    entrypoint = row['paths'].get('demo') or row['paths']['snapshot'] + row['paths']['snapshotEntry']
+    entrypoint = row['paths'].get('demo') or (
+        row['paths']['snapshot'] + row['paths']['snapshotEntry'] if 'snapshot' in row['paths'] else None
+    )
     out = Path(args.out).absolute()
     no_symlinks(out)
     if out.exists():

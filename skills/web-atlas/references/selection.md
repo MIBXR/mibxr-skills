@@ -16,11 +16,11 @@
 
 ## 完整取材与证据等级
 
-候选摘要只用于选择。实现前对最终案例执行 `show --source`，对最终巧思执行 `pattern-show PATTERN_ID --source`。巧思包包含完整机制、Prompt、参数、来源观察与证据等级，以及 `sourceCaseBundles`；`source` 自动读取 `sourceFiles` 中的实际源码。简要写明设计依据，包含案例／巧思 ID、职责与适配方式。`sources[].evidence` 区分实站观察 `observed`、教学改编 `adapted` 与推导 `inferred`；通过来源案例理解机制在完整页面中的效果，按原有证据等级表述。
+候选摘要只用于选择。实现前对最终案例执行 `show --source`，对最终巧思执行 `pattern-show PATTERN_ID --source`。巧思包包含完整机制、Prompt、参数、来源观察与证据等级，以及 `sourceCaseBundles`；`source` 自动读取 `sourceFiles` 中的实际源码。按 `sources[].focus` 进入页面并定位机制。简要写明设计依据，包含案例／巧思 ID、职责与适配方式。`sources[].evidence` 区分实站观察 `observed`、教学改编 `adapted` 与推导 `inferred`；通过来源案例理解机制在完整页面中的效果，按原有证据等级表述。
 
 ## 素材许可与能力边界
 
-素材取材先执行 `material-show MATERIAL_ID --source`，读取完整资源信息、交互示例、接入方法、许可、来源版本与限制。通过素材的上游链接查阅更完整的组件、参数和资产。按当前技术栈判断示例中的依赖和集成成本，保留许可要求与第三方署名。
+素材取材先执行 `material-show MATERIAL_ID --source`，读取完整资源信息、交互示例、接入方法、许可、来源版本与限制。素材取材同时读取 `gallery`、`galleryRatio`、`galleryFit`、`gallery[].compare` 和 `relatedEntries`。通过素材的上游链接查阅更完整的组件、参数和资产。按当前技术栈判断示例中的依赖和集成成本，保留许可要求与第三方署名。
 
 ## 网页说明
 

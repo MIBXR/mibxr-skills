@@ -30,7 +30,7 @@ python ATLAS_SCRIPT --session SESSION_FILE material-show MATERIAL_ID --source
 python ATLAS_SCRIPT --session SESSION_FILE material-export MATERIAL_ID --out NEW_DIRECTORY
 ```
 
-按当前任务选择 `search`（完整案例）、`pattern-search`（独立巧思）或 `material-search`（内容素材），空查询读取目录。若 `hasMore` 为 `true`，保持同一会话、查询与过滤，把 `--offset` 增加本次 `limit` 继续读取，直到 `hasMore` 为 `false`；单页上限为 100，目录总量不限。查询支持中文和英文关键词，输出命中字段、适用场景与谨慎使用项；分数用于排序，适合到什么程度要结合真实需求判断。巧思可按单个 `--type` 体验类型、`--category` 功能分类、`--case` 来源案例共同过滤；`experienceTypes` 可含多个类型，命中其中一个即符合类型过滤。素材按其 `type`（如 `component-library`）与功能分类过滤，类型由目录中的实际标注决定。
+按当前任务选择 `search`（完整案例）、`pattern-search`（独立巧思）或 `material-search`（内容素材），空查询读取目录。若 `hasMore` 为 `true`，保持同一会话、查询与过滤，把 `--offset` 增加本次 `limit` 继续读取，直到 `hasMore` 为 `false`；单页上限为 100，目录总量不限。查询支持中文和英文关键词，输出命中字段、适用场景与谨慎使用项；分数用于排序，适合到什么程度要结合真实需求判断。巧思可按单个 `--type` 体验类型、`--category` 功能分类、`--case` 来源案例共同过滤；`experienceTypes` 可含多个类型，命中其中一个即符合类型过滤。巧思摘要包含 `preview` 封面路径，`trigger`、`effect` 等可选字段在条目有值时输出。素材按其 `type`（如 `component-library`）与功能分类过滤，类型由目录中的实际标注决定。
 
 体验类型由上游逐项标注：`visual` 是排版、色彩、装饰和形状等静态视觉机制；`micro-motion` 是按钮、卡片等局部反馈或辅助动效；`page-motion` 是首屏、滚动叙事、页面过渡等主体动效；`sound` 是背景音乐和操作音；`structure` 是内容组织、导航和信息关系。按当前产品的问题筛选，不要求每个案例具备全部类型，也不为凑类型拆分机制。声音适用于游戏、品牌叙事等确有听觉需求的场景，结合声音巧思包的来源观察与核验边界选择。
 
@@ -44,7 +44,7 @@ python ATLAS_SCRIPT --session SESSION_FILE refresh
 
 ## 取得完整材料与预览
 
-执行 `export`、`pattern-export` 或 `material-export`，按固定的 Git 提交读取文件，保留仓库相对目录。目标目录必须尚不存在。巧思导出按 `bundle.files` 保存自身条目、Prompt 及相关案例的完整 demo、素材和上下文，`atlas-export.json` 保留巧思包、`sourceFiles`、来源案例包、文件路径与上游版本；按原子机制的职责取材，完整 demo 用于理解页面关系。素材导出保留资源包、样例源码、完整原文快照和许可上下文，目录中的实际文件由清单决定。各导出均支持 `--code-only`，下载 `source`、`context`、`vendor`、`license` 角色及 `process` 中扩展名为 `.md`、`.txt`、`.json`、`.css`、`.js`、`.mjs` 的文件；未下载路径列在 `omitted`，对应文件信息与远程地址列在 `filesNotDownloaded`。完整预览媒体按清单补齐，用静态 HTTP 服务器提供导出根目录中的文件，打开 `atlas-export.json` 的 `entrypoint`，巧思使用 `entrypoints[].path`；文字快照的入口为快照目录内的 `snapshotEntry`，可运行内容的入口为 `demo`。
+执行 `export`、`pattern-export` 或 `material-export`，按固定的 Git 提交读取文件，保留仓库相对目录。目标目录必须尚不存在。巧思导出按 `bundle.files` 保存自身条目、Prompt 及相关案例的完整 demo、素材和上下文，`atlas-export.json` 保留巧思包、`sourceFiles`、来源案例包、文件路径与上游版本；按原子机制的职责取材，完整 demo 用于理解页面关系。素材导出保留资源包、样例源码、完整原文快照和许可上下文，目录中的实际文件由清单决定。各导出均支持 `--code-only`，下载 `source`、`context`、`vendor`、`license` 角色及 `process` 中扩展名为 `.md`、`.txt`、`.json`、`.css`、`.js`、`.mjs` 的文件；未下载路径列在 `omitted`，对应文件信息与远程地址列在 `filesNotDownloaded`。完整预览媒体按清单补齐，用静态 HTTP 服务器提供导出根目录中的文件，打开 `atlas-export.json` 的 `entrypoint`，巧思使用 `entrypoints[].path`，优先来源指定的 `sources[].focus.entrypoint`，否则使用来源案例的 `paths.demo`，同一案例同一路径只列一次；文字快照的入口为快照目录内的 `snapshotEntry`，可运行内容的入口为 `demo`。图像素材的 `entrypoint` 为 `null`，作品在 `gallery`。
 
 ## 直接读取入口
 

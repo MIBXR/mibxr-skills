@@ -16,6 +16,7 @@ python ATLAS_SCRIPT --session SESSION_FILE search "" --kind cases --style hand-d
 python ATLAS_SCRIPT --session SESSION_FILE search "" --kind cases --tech threejs --limit 100
 python ATLAS_SCRIPT --session SESSION_FILE search "转场" --kind patterns --type transition --limit 5
 python ATLAS_SCRIPT --session SESSION_FILE search "" --kind materials
+python ATLAS_SCRIPT --session SESSION_FILE search "" --kind materials --type sound
 python ATLAS_SCRIPT --session SESSION_FILE show motion-showreel
 python ATLAS_SCRIPT --session SESSION_FILE export web-video-presentation --out NEW_DIR --code-only
 python ATLAS_SCRIPT --session SESSION_FILE show archive-os
@@ -37,7 +38,7 @@ export ID --out NEW_DIR [--code-only]
 
 - `search` 默认在案例、巧思和素材中检索；空查询列目录。`--kind` 筛选 `cases`／`patterns`／`materials`。
 - `--carrier` 匹配目录实际的 `carriers[]`：`video`（影像视频）、`console`（交互操作台）。
-- `--type` 匹配巧思的 `types[]`：`composition`（画面构成）、`type-motion`（文字动效）、`transition`（转场）、`camera`（镜头与空间）、`feedback`（交互反馈）、`rhythm`（节奏与时序）、`hud`（信息层 HUD）、`texture`（质感与后期）、`sound`（声音）。案例没有 `types[]`，带类型筛选不会命中案例。
+- `--type` 对巧思匹配 `types[]`，对素材匹配 `type`，案例不命中；取值按 taxonomy 的 `types` 与 `materialTypes` 并集校验，未知值报错并列出可选值。巧思取值为 `composition`（画面构成）、`type-motion`（文字动效）、`transition`（转场）、`camera`（镜头与空间）、`feedback`（交互反馈）、`rhythm`（节奏与时序）、`hud`（信息层 HUD）、`texture`（质感与后期）、`sound`（声音）；素材取值为 `component-library`（组件库）、`image`（图像）、`sound`（声音）、`font`（字体）、`poster`（海报）、`agent-skill`（Agent Skill）、`prompt-kit`（提示词套件）。
 - `--style` 匹配案例的 `style`：`hand-drawn`（手绘与绘画）、`print-craft`（版画、剪纸与传统工艺）、`graphic-type`（图形与排版）、`interface`（界面与发布）、`evidence`（实证与数据）、`documentary`（剪辑与纪实）、`dimensional`（3D、卡通与游戏）。
 - `--purpose` 匹配案例的 `purpose`：`brand`（品牌与产品）、`explainer`（知识讲解）、`data`（数据与实证）、`news`（新闻纪实）、`story`（叙事短片）、`title-art`（片头与视觉）。
 - `--tech` 匹配案例 `tech[]` 中的值：`canvas2d`（Canvas 2D）、`webgl`（原生 WebGL 着色）、`threejs`（three.js 3D）、`footage`（实拍素材）、`prerendered`（离线渲染帧）、`remotion`（React + Remotion）、`maplibre`（MapLibre 地图）、`dom`（DOM / SVG）。
@@ -47,7 +48,7 @@ export ID --out NEW_DIR [--code-only]
 - 中文和英文关键词用于检索标题、摘要、标签等内容，排序分数只用于召回排序，是否适用仍按简报判断。
 
 `show ID` 返回完整案例或巧思资料包、Prompt、入口、文件清单和上游信息；`--source` 再读取 Demo 的 HTML／CSS／JS／TS 源码，排除共享的 `motion-kit.js`；`vendor/` 下的第三方库与超过 256 KB 的文件（如打包产物）只列在 `sourceSkipped`，需要时用 `export` 取得。来源案例的读取与使用见 [selection.md](selection.md)。
-素材 ID 返回素材包，包含完整条目、工作流、skill 原文、README 与快照文件清单；选用前读取原文和许可。
+素材 ID 返回完整 `material`、工作流、使用说明、入口和文件清单；文字快照按 `snapshotPath` 与 `snapshotEntry` 读取原文，可运行素材按 `entrypoint` 打开 Demo，选用前读取许可。
 
 ## SHA、离线与刷新
 
@@ -70,7 +71,7 @@ python ATLAS_SCRIPT --session SESSION_FILE refresh
 ## 导出与运行
 
 `export ID --out NEW_DIR` 按资料包 `files[]` 下载全部文件，保留仓库相对目录，目标目录必须不存在。根目录的 `atlas-export.json` 保留完整资料包 `bundle`（含 `documents.prompt`）、入口 `entrypoint`、上游信息 `provenance`、实际下载清单 `files`、未下载清单 `notDownloaded` 以及 `codeOnly` 标记；不额外生成根级 `PROMPT.md`、`README.md` 或 `entry.json`。
-素材导出按资料包清单保存 `demos/materials/<id>/` 下的完整原文快照；`--code-only` 按下面的扩展名白名单筛选，未下载文件保留在清单中。
+素材导出按资料包清单保留快照或可运行 Demo 的仓库相对路径；`--code-only` 按下面的扩展名白名单筛选，未下载文件保留在清单中。
 
 `--code-only` 仅下载扩展名属于 `.html`、`.htm`、`.js`、`.mjs`、`.cjs`、`.css`、`.json`、`.md`、`.txt`、`.svg`、`.glsl`、`.frag`、`.vert`、`.wgsl`、`.xml`、`.csv` 的代码与文本文件，扩展名不区分大小写；其余文件记录在 `notDownloaded`，每项含 `path` 与 `bytes`。未带该参数时下载全部文件，`notDownloaded` 为空数组。图片、音频、字体等依赖可能因此未下载，运行前按清单补齐。
 
