@@ -8,6 +8,7 @@ import re
 import shutil
 import sys
 import tempfile
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -17,6 +18,19 @@ from datetime import datetime, timezone
 SKILL_ROOT = Path(__file__).resolve().parent.parent
 COMMIT = re.compile(r"^[0-9a-f]{40}$")
 EXPERIENCE_TYPES = ('visual', 'micro-motion', 'page-motion', 'sound', 'structure')
+
+
+def fetch(request):
+    for attempt in range(4):
+        try:
+            with urllib.request.urlopen(request, timeout=60) as response:
+                return response.read()
+        except urllib.error.HTTPError:
+            raise
+        except (OSError, urllib.error.URLError):
+            if attempt == 3:
+                raise
+            time.sleep(attempt + 1)
 
 
 class AtlasError(Exception):
@@ -113,8 +127,7 @@ class Atlas:
         def request_json(url):
             request = urllib.request.Request(url, headers={'User-Agent': 'mibxr-web-atlas-skill/1', 'Accept': 'application/vnd.github+json'})
             try:
-                with urllib.request.urlopen(request, timeout=60) as response:
-                    return parse_json(response.read(), url)
+                return parse_json(fetch(request), url)
             except (OSError, urllib.error.URLError) as exc:
                 raise AtlasError(f'Cannot resolve the latest default-branch commit: {exc}. Use an existing --session, an explicit --ref, or --local-root.') from exc
         repository = request_json(api)
@@ -169,8 +182,7 @@ class Atlas:
                 raise AtlasError(f"Cannot read local file {path}: {exc}") from exc
         request = urllib.request.Request(self.url(path), headers={"User-Agent": "mibxr-web-atlas-skill/1"})
         try:
-            with urllib.request.urlopen(request, timeout=60) as response:
-                return response.read()
+            return fetch(request)
         except (OSError, urllib.error.URLError) as exc:
             raise AtlasError(f"Cannot retrieve {path} at {self.ref}: {exc}") from exc
 

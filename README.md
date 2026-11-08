@@ -4,8 +4,8 @@
 
 | 技能 | 版本 | 用途 |
 | --- | --- | --- |
-| [web-atlas](#网页设计参考web-atlas) | `1.0.1` | 网站与网页应用的设计：剖析需求，从 Web Atlas 选择并组合案例、巧思和素材，取得源码后实现页面。 |
-| [motion-atlas](#影像与操作台参考motion-atlas) | `1.2.0` | 按时间线播放的作品：片头、宣传片、数据短片和交互操作台，从 Motion Atlas 取材，实现后逐帧出片。 |
+| [web-atlas](#网页设计参考web-atlas) | `1.0.2` | 网站与网页应用的设计：剖析需求，从 Web Atlas 选择并组合案例、巧思和素材，取得源码后实现页面。 |
+| [motion-atlas](#影像与操作台参考motion-atlas) | `1.2.1` | 按时间线播放的作品：片头、宣传片、数据短片和交互操作台，从 Motion Atlas 取材，实现后逐帧出片。 |
 | [desktop-pet-workflow](#桌宠制作与交付desktop-pet-workflow) | `1.0.0` | 桌宠的设计、制作、动作修复、展示网站与 Git 交付。 |
 | [lean-audit](#精简审查lean-audit) | `1.0.0` | 找出 Agent 配置里诱发过度设计的写法，开发完成后找出改动里超出计划的部分。 |
 
@@ -29,9 +29,9 @@ skills/web-atlas。
 
 ## 网页设计参考（web-atlas）
 
-`$web-atlas` 把 [Web Atlas](https://github.com/MIBXR/web-atlas) 接入真实网站任务：先了解现场情况、写简报，只补问会改变决定的问题，复述理解后检索并逐步缩小范围，再给出 2–3 个有差异的对照方案，分析用户反应后定稿、取材、实现。用户说不清想要什么时，也从真实内容和使用场景逐步找出方向，无需先知道 ID。
+`$web-atlas` 把 [Web Atlas](https://github.com/MIBXR/web-atlas-next) 接入真实网站任务：先了解现场情况、写简报，只补问会改变决定的问题，复述理解后检索并逐步缩小范围，再给出 2–3 个有差异的对照方案，分析用户反应后定稿、取材、实现。用户说不清想要什么时，也从真实内容和使用场景逐步找出方向，无需先知道 ID。
 
-本仓库只保存工作流、检索脚本与上游配置。案例、巧思和素材数据、完整前端、交互样例、视觉预览和提示词由 `MIBXR/web-atlas` 维护；网站与 Agent 读取同一份资料。取得的案例包含网页右侧说明的渲染内容、完整原始字段与文档。
+本仓库只保存工作流、检索脚本与上游配置。案例、巧思和素材数据、完整前端、交互样例、视觉预览和提示词由 `MIBXR/web-atlas-next` 维护；网站与 Agent 读取同一份资料。取得的案例包含网页右侧说明的渲染内容、完整原始字段与文档。
 
 [阅读技能正文](skills/web-atlas/SKILL.md)。检索脚本通过 `--session` 固定上游默认分支的 Git SHA，支持 `refresh`、指定 `--ref` 和离线 `--local-root`，状态保存在用户工作目录。案例、巧思与素材分别检索、分页和完整取材，导出保留仓库路径、版本与未下载媒体清单；参数及示例见 [CLI 参考](skills/web-atlas/references/cli.md)。
 
@@ -45,9 +45,9 @@ $web-atlas 为我的产品页挑选首屏聚焦与加载反馈的巧思，跨案
 
 ## 影像与操作台参考（motion-atlas）
 
-`$motion-atlas` 把 [Motion Atlas](https://github.com/MIBXR/motion-atlas) 接入时间线作品任务：先了解现场情况、写简报，只补问会改变决定的问题，复述理解后检索并逐步缩小范围，再用关键帧条与短片段对照 2–3 个有差异的方向，分析用户反应后定稿、取材、实现并逐帧出片。用于影像视频和按时间线播放、带自动驾驶时间轴的交互操作台与展示台。
+`$motion-atlas` 把 [Motion Atlas](https://github.com/MIBXR/motion-atlas-next) 接入时间线作品任务：先了解现场情况、写简报，只补问会改变决定的问题，复述理解后检索并逐步缩小范围，再用关键帧条与短片段对照 2–3 个有差异的方向，分析用户反应后定稿、取材、实现并逐帧出片。用于影像视频和按时间线播放、带自动驾驶时间轴的交互操作台与展示台。
 
-本仓库只保存工作流、检索脚本与上游配置。案例、巧思、素材、节拍表、Prompt 与可逐帧渲染的 Demo 由 `MIBXR/motion-atlas` 维护；完整取材保留条目、Prompt、入口与文件清单。
+本仓库只保存工作流、检索脚本与上游配置。案例、巧思、素材、节拍表、Prompt 与可逐帧渲染的 Demo 由 `MIBXR/motion-atlas-next` 维护；完整取材保留条目、Prompt、入口与文件清单。
 
 [阅读技能正文](skills/motion-atlas/SKILL.md)。检索脚本的会话与版本用法和 web-atlas 相同，可按案例／巧思／素材、载体和类型过滤并完整分页；参数及示例见 [CLI 参考](skills/motion-atlas/references/cli.md)。
 

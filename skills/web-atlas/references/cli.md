@@ -48,4 +48,4 @@ python ATLAS_SCRIPT --session SESSION_FILE refresh
 
 ## 直接读取入口
 
-[Agent 取材说明](https://github.com/MIBXR/web-atlas/blob/master/docs/agent.md) 与 `agent/catalog.json`、`agent/cases/<id>.json`、`agent/patterns/index.json`、`agent/patterns/<id>.json`、`agent/materials/index.json`、`agent/materials/<id>.json` 提供直接读取入口。
+[Agent 取材说明](https://github.com/MIBXR/web-atlas-next/blob/main/docs/agent.md) 与 `agent/catalog.json`、`agent/cases/<id>.json`、`agent/patterns/index.json`、`agent/patterns/<id>.json`、`agent/materials/index.json`、`agent/materials/<id>.json` 提供直接读取入口。
