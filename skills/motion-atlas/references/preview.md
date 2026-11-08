@@ -6,12 +6,12 @@
 从 Motion Atlas 仓库的同一上游 SHA 取得完整工具目录，或使用已有本地仓库；`--local-root` 只读取该工作树，不下载渲染工具。渲染脚本还依赖 `scripts/lib/cdp.mjs`、`scripts/lib/catalog.mjs` 等，不能只拿单个 `.mjs`。
 需要 Node.js ≥ 22 和本机 Edge／Chrome／Chromium；未自动找到浏览器时，用 `BROWSER_PATH` 指定。合成 MP4 需要可用的 ffmpeg；没有时渲染器保留帧序列并打印合成命令。
 
-以下以本地仓库 `C:/Users/mibxr/Code/MIBXR/motion-atlas` 为例，命令在 Git Bash 中运行。Windows 先核实 `command -v bash python node ffmpeg ffprobe` 和 `node --version`；复杂命令保存为 UTF-8、LF 的 `.sh` 文件，再用已定位的 `bash.exe` 执行。输出全部写到用户工作区，仓库只读；替换路径、ID 和时间点后用于当前项目。
+以下以本地仓库 `C:/Users/mibxr/Code/MIBXR/motion-atlas-next` 为例，命令在 Git Bash 中运行。Windows 先核实 `command -v bash python node ffmpeg ffprobe` 和 `node --version`；复杂命令保存为 UTF-8、LF 的 `.sh` 文件，再用已定位的 `bash.exe` 执行。输出全部写到用户工作区，仓库只读；替换路径、ID 和时间点后用于当前项目。
 
 ```bash
 ATLAS_SCRIPT=/c/Users/mibxr/Code/MIBXR/mibxr-skills/skills/motion-atlas/scripts/atlas.py
-MOTION_ROOT=/c/Users/mibxr/Code/MIBXR/motion-atlas
-PREVIEW_ROOT=/c/Users/mibxr/Code/MIBXR/_atlas-work/t4-skills/preview-test
+MOTION_ROOT=/c/Users/mibxr/Code/MIBXR/motion-atlas-next
+PREVIEW_ROOT=/c/Users/mibxr/AppData/Local/Temp/atlas-work/preview-test
 python "$ATLAS_SCRIPT" --local-root "$MOTION_ROOT" export map-pilgrimage --out "$PREVIEW_ROOT/demo"
 mkdir -p "$PREVIEW_ROOT/frames"
 ```
@@ -19,7 +19,7 @@ mkdir -p "$PREVIEW_ROOT/frames"
 `demo` 目标目录必须不存在，重复演示时把 `PREVIEW_ROOT` 改成一个新目录。此处完整导出，不用 `--code-only`，以免丢掉运行所需媒体。按用户真实内容修改导出副本：地图案例修改 `film/config.js` 和 `film/scenes.js`；拆分巧思修改 `mechanism/`，重放巧思修改 `index.html` 的 replay 配置。用单独的 Git Bash 终端从整个预览目录启动服务器，同时服务 Demo、关键帧和拼条页面；第二个终端也要将 `PREVIEW_ROOT` 设为同一个目录：
 
 ```bash
-PREVIEW_ROOT=/c/Users/mibxr/Code/MIBXR/_atlas-work/t4-skills/preview-test
+PREVIEW_ROOT=/c/Users/mibxr/AppData/Local/Temp/atlas-work/preview-test
 python -m http.server 4331 --bind 127.0.0.1 --directory "$PREVIEW_ROOT"
 ```
 

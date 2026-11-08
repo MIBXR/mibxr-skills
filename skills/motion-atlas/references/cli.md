@@ -2,7 +2,7 @@
 
 ## 建立取材会话
 
-使用本 skill 的 `scripts/atlas.py`（Python 3，仅标准库），读取 `MIBXR/motion-atlas` 的 Agent 协议，输出 UTF-8 JSON。全局参数放在子命令前；下例的 `ATLAS_SCRIPT` 是脚本实际路径，`SESSION_FILE` 是用户项目 `work/<任务名>/motion-session.json`，`NEW_DIR` 是尚不存在的导出目录。
+使用本 skill 的 `scripts/atlas.py`（Python 3，仅标准库），读取 `MIBXR/motion-atlas-next` 的 Agent 协议，输出 UTF-8 JSON。全局参数放在子命令前；下例的 `ATLAS_SCRIPT` 是脚本实际路径，`SESSION_FILE` 是用户项目 `work/<任务名>/motion-session.json`，`NEW_DIR` 是尚不存在的导出目录。
 
 远程首次使用 `--session SESSION_FILE` 时，解析 GitHub 默认分支的最新完整 Git SHA。案例、巧思和素材共享该 SHA，后续检索、查看、取材和导出均传入同一会话路径。会话保存 `repository`，跨仓库复用会报错；状态写在用户工作区，不写入 skill 安装目录。
 
@@ -57,8 +57,8 @@ export ID --out NEW_DIR [--code-only]
 ```bash
 python ATLAS_SCRIPT info
 python ATLAS_SCRIPT --ref 6d96a02d8014b49280f682b0edd79cf750bd80e5 search "" --limit 100
-python ATLAS_SCRIPT --local-root C:/Users/mibxr/Code/MIBXR/motion-atlas info
-python ATLAS_SCRIPT --local-root C:/Users/mibxr/Code/MIBXR/motion-atlas search "转场" --kind patterns
+python ATLAS_SCRIPT --local-root C:/Users/mibxr/Code/MIBXR/motion-atlas-next info
+python ATLAS_SCRIPT --local-root C:/Users/mibxr/Code/MIBXR/motion-atlas-next search "转场" --kind patterns
 python ATLAS_SCRIPT --session SESSION_FILE refresh
 ```
 
