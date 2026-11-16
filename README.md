@@ -4,8 +4,8 @@
 
 | 技能 | 版本 | 用途 |
 | --- | --- | --- |
-| [web-atlas](#网页设计参考web-atlas) | `1.0.2` | 网站与网页应用的设计：剖析需求，从 Web Atlas 选择并组合案例、巧思和素材，取得源码后实现页面。 |
-| [motion-atlas](#影像与操作台参考motion-atlas) | `1.2.1` | 按时间线播放的作品：片头、宣传片、数据短片和交互操作台，从 Motion Atlas 取材，实现后逐帧出片。 |
+| [web-atlas](#网页设计参考web-atlas) | `1.0.3` | 网站与网页应用的设计：剖析需求，从 Web Atlas 选择并组合案例、巧思和素材，取得源码后实现页面。 |
+| [motion-atlas](#影像与操作台参考motion-atlas) | `1.2.2` | 按时间线播放的作品：片头、宣传片、数据短片和交互操作台，从 Motion Atlas 取材，实现后逐帧出片。 |
 | [desktop-pet-workflow](#桌宠制作与交付desktop-pet-workflow) | `1.0.0` | 桌宠的设计、制作、动作修复、展示网站与 Git 交付。 |
 | [lean-audit](#精简审查lean-audit) | `1.1.0` | 审查 Agent 配置、开发前确定改动范围、交付前核对实际改动。 |
 
@@ -33,7 +33,7 @@ skills/web-atlas。
 
 本仓库只保存工作流、检索脚本与上游配置。案例、巧思和素材数据、完整前端、交互样例、视觉预览和提示词由 `MIBXR/web-atlas-next` 维护；网站与 Agent 读取同一份资料。取得的案例包含网页右侧说明的渲染内容、完整原始字段与文档。
 
-[阅读技能正文](skills/web-atlas/SKILL.md)。检索脚本通过 `--session` 固定上游默认分支的 Git SHA，支持 `refresh`、指定 `--ref` 和离线 `--local-root`，状态保存在用户工作目录。案例、巧思与素材分别检索、分页和完整取材，导出保留仓库路径、版本与未下载媒体清单；参数及示例见 [CLI 参考](skills/web-atlas/references/cli.md)。
+[阅读技能正文](skills/web-atlas/SKILL.md)。检索脚本每次新建会话时读取上游默认分支的最新提交，上游新增内容无需重新发布技能即可取用；同一任务用 `--session` 沿用这次的 Git SHA，也支持 `refresh`、指定 `--ref` 和离线 `--local-root`，状态保存在用户工作目录。案例、巧思与素材分别检索、分页和完整取材，导出保留仓库路径、版本与未下载媒体清单；参数及示例见 [CLI 参考](skills/web-atlas/references/cli.md)。
 
 ```text
 $web-atlas 我想给我的独立工作室做个官网，但说不清想要什么样子。

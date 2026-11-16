@@ -56,7 +56,7 @@ export ID --out NEW_DIR [--code-only]
 
 ```bash
 python ATLAS_SCRIPT info
-python ATLAS_SCRIPT --ref 6d96a02d8014b49280f682b0edd79cf750bd80e5 search "" --limit 100
+python ATLAS_SCRIPT --ref b387d2231cace73f6b5e9f48cfdec9478782c5db search "" --limit 100
 python ATLAS_SCRIPT --local-root C:/Users/mibxr/Code/MIBXR/motion-atlas-next info
 python ATLAS_SCRIPT --local-root C:/Users/mibxr/Code/MIBXR/motion-atlas-next search "转场" --kind patterns
 python ATLAS_SCRIPT --session SESSION_FILE refresh
@@ -66,7 +66,7 @@ python ATLAS_SCRIPT --session SESSION_FILE refresh
 `refresh` 必须带 `--session`，不与 `--ref` 或 `--local-root` 同用。它重新解析默认分支提交，读取成功后替换会话；失败保留原会话。刷新后同一任务的材料都取自新的 SHA。
 默认分支解析失败会报错；已有会话、显式 `--ref` 与离线 `--local-root` 分别可用。
 
-`upstream.lock.json` 保存仓库、目录路径、schema 版本与已验证基线；基线不限制默认发现新增条目。当前 Agent catalog 和资料包的 schemaVersion 为 1，读取 `agent/catalog.json`、`agent/cases/<id>.json`、`agent/patterns/<id>.json` 与 `agent/materials/<id>.json`；素材索引为 `agent/materials/index.json`。
+`upstream.lock.json` 只保存仓库、目录路径与 schema 版本，不指定提交；上游新增条目后，新会话或 `refresh` 即可读到，无需重新发布技能。只有 Agent 协议的 schema 或字段变化时才需要更新技能。当前 Agent catalog 和资料包的 schemaVersion 为 1，读取 `agent/catalog.json`、`agent/cases/<id>.json`、`agent/patterns/<id>.json` 与 `agent/materials/<id>.json`；素材索引为 `agent/materials/index.json`。
 
 ## 导出与运行
 

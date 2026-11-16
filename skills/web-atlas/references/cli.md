@@ -40,7 +40,7 @@ python ATLAS_SCRIPT --session SESSION_FILE material-export MATERIAL_ID --out NEW
 python ATLAS_SCRIPT --session SESSION_FILE refresh
 ```
 
-刷新时解析默认分支的新 Git 提交，读取该版本的案例目录后替换会话；失败保留原会话。各命令只读取对应目录和实际取用的内容，巧思取材同时读取其来源案例。无需会话的 `info` 查看当前最新版本及各目录的数量。默认解析失败会明确报错；已有会话、`--ref FULL_COMMIT` 复现模式及 `--local-root CHECKOUT` 离线模式各自可用。后两种模式的全局参数也放在子命令前。`upstream.lock.json` 保存上游配置和已验证基线，基线不限制默认发现新增内容。
+刷新时解析默认分支的新 Git 提交，读取该版本的案例目录后替换会话；失败保留原会话。各命令只读取对应目录和实际取用的内容，巧思取材同时读取其来源案例。无需会话的 `info` 查看当前最新版本及各目录的数量。默认解析失败会明确报错；已有会话、`--ref FULL_COMMIT` 复现模式及 `--local-root CHECKOUT` 离线模式各自可用。后两种模式的全局参数也放在子命令前。`upstream.lock.json` 只保存上游仓库、目录入口与 schema 版本，不指定提交；上游新增案例、巧思或素材后，新会话或 `refresh` 即可读到，无需重新发布技能。只有 Agent 协议的 schema 或字段变化时才需要更新技能。
 
 ## 取得完整材料与预览
 
